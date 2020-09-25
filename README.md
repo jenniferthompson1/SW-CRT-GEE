@@ -1,10 +1,12 @@
 # Comparison of small-sample standard-error corrections for generalised estimating equations in stepped wedge cluster randomised trials with a binary outcome: A simulation study
 
-This repository contains all programs used to conduct the analysis for our paper "Comparison of small-sample standard-error corrections for generalised estimating equations in stepped wedge cluster randomised trials with a binary outcome: A simulation study". The paper can be read here: https://doi.org/10.1177/0962280220958735
+This repository contains all programs used to conduct the analysis for our paper 
+
+Thompson J, Hemming K, Forbes A, Fielding K, Hayes R. Comparison of small-sample standard-error corrections for generalised estimating equations in stepped wedge cluster randomised trials with a binary outcome: A simulation study. *Statistical Methods in Medical Research*. September 2020. (https://doi.org/10.1177/0962280220958735)
 
 ## Description
 
-Details are contained in our paper found here: https://doi.org/10.1177/0962280220958735. 
+Details are contained in our paper referenced at the bottom of this file.
 
 In brief, the files in DataGeneration sample from a multivariate normal distribution to simulate data from stepped wedge cluster randomised trials with particular set characteristics. For each each simulated trial dataset, several  generalised estimating equations analysis are conducted with small sample corrections. In phase one these 
 
@@ -54,3 +56,9 @@ Jennifer Thompson jennifer.thompson@lshtm.ac.uk
 ## License
 
 This project is licensed under the CC BY 4.0 license.
+
+## DOI
+
+[![DOI](https://zenodo.org/badge/298531397.svg)](https://zenodo.org/badge/latestdoi/298531397)
+
+
