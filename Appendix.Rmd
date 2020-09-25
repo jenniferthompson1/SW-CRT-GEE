@@ -1,0 +1,1112 @@
+---
+title: "Supplementary Material"
+output:
+  pdf_document: 
+    includes:
+      in_header: header.tex 
+---
+
+# Supplementary text 1: Generalised Estimating Equation methods
+
+Denote $Y_{il}$ as the binary outcome in cluster $i=1,...,C$ for observations $l=1,...,m_i$, and $Z_{il}$ as a p-dimensional covariate vector for $p$ covariates. The marginal mean $E[Y_{il}|Z_{il}]=\mu_{il}$ where $g(\mu_{il})=\beta Z_{il}$ for some link function $g(.)$ and p-vector of coefficients $\beta$.
+
+The GEE estimates $\hat{\beta}$ are found by solving the estimating equations
+
+$$ \sum_{i=1}^C{D^T_iV^{-1}_{Wi}(Y_i-\mu_i)=0}$$
+
+where $D_i=\partial\mu_i/\partial\beta'$, $V_{Wi}$ is the covariance matrix of $Y_i$ assuming working correlation matrix $R_W$. Estimates of $\hat{\beta}$ will be asyptotically consistent regardless of specification of $R_W$ [1].
+
+Uncorrected sandwich variances are calculated as follows:
+
+$$V_S = V_M \left[\sum_{i=1}^{C} D_i^T V_{Wi}^{-1} Cov(Y_i) V_{Wi}^{-1} D_i \right] V_M$$
+
+where $V_M = \left( \sum_{i=1}^C D_i^T V_{Wi} D_i \right) ^{-1}$ is the model based variance, and $Cov(Y_i)=(Y_i - \hat{\mu}_i)(Y_i - \hat{\mu}_i)^T$ is an estimator of the covariance matrix of $Y_i$. When $V_{Wi}$ is correctly specified, $V_S = V_M$.
+
+## Sandwich variance corrections
+The sandwich variance estimator is biased with a small number of clusters. The modificatied estimators below aim to reduce this bias.
+
+\textbf{Kauermann and Carroll (KC)} [2] derived the following variance estimator:
+
+$$V_{KC} = V_M \left[\sum_{i=1}^C D_i^T V_{Wi}^{-1} A_{KCi} Cov(Y_i) A_{KCi} V_{Wi}^{-1} D_i \right] V_M  $$
+where $A_{KCi} = (I_i - H_i)^{-1/2}$, $I_i$ is an $m_i \times m_i$  identity matrix and $H_i = D_i V_M D_i^T V_{Wi}^{-1}$ is an expression for the leverage of cluster $i$
+
+The calculation of  $A_{KCi} = (I_i - H_i)^{-1/2}$ using eigenvalue decomposition (as implemented in geesmv [12]) can lead to erroneous results[3]. Several alternative methods for calculation of KC have been suggested. We implement a \textbf{Kauermann and Carroll approximation (KC-approx)} described by Gallis et al [4]:
+
+$$V_{KC-approx} = V_M \frac{\left[\sum_{i=1}^C D_i^T V_{Wi}^{-1} (I_i - H_i)^{-1} Cov(Y_i) V_{Wi}^{-1} D_i  + \sum_{i=1}^C D_i^T V_{Wi}^{-1} Cov(Y_i)  (I_i - H_i^T)^{-1} V_{Wi}^{-1} D_i  \right]}{2} V_M  $$
+
+
+\textbf{Fay and Graubard (FG)} [5] derived the variance estimator:
+
+$$V_{FG} = V_M \left[\sum_{i=1}^C A_{FGi} D_i^T V_{Wi}^{-1} Cov(Y_i) V_{Wi}^{-1} D_i A_{FGi} \right] V_M  $$
+where $A_{FGi} = diag \left( \left[ 1 - min \left( b, [D_i^T V_{Wi} D_i V_M ]_{jj} \right) \right]^{-1/2} \right)$. We set b=0.75 [5].
+
+\textbf{Mancl and DeRouen (MD)} [6] derived the variance estimator:
+
+$$V_{MD} = V_M \left[\sum_{i=1}^C D_i^T V_{Wi}^{-1} A_{MDi} Cov(Y_i) A_{MDi} V_{Wi}^{-1} D_i \right] V_M  $$
+where $A_{MDi} = (I_i - H_i)^{-1}$.
+
+\textbf{Morel, Bokossa and Neerchal (MBN)} [7] derived the variance estimator:
+
+$$V_{MBN} = V_M \left[\sum_{i=1}^C D_i^T V_{Wi}^{-1} A_{MBNi} V_{Wi}^{-1} D_i \right] V_M  $$
+
+where 
+$$A_{MBNi} = kCov(Y_i) + \delta \phi V_{Wi}$$ 
+
+$$k=\frac{\sum_{i=1}^C m_i -1}{\sum_{i=1}^C m_i - p} \frac{C}{C-1}$$
+$$\delta = max \left( \frac{p}{C-p} , \frac{1}{d} \right)$$ 
+$$\phi = max \left( f, trace \left[ V_M \sum_{i=1}^C D_i^T V_{Wi}^{-1} Cov(Y_i) V_{Wi}^{-1} D_i^T\right] /p\right)$$
+
+We set $d=2$ and $f=1$.
+
+\textbf{Mackinnon and White (MW)} [8] suggest the simple estimator
+
+$$V_{MK} = \frac{C-p}{p} V_S$$
+
+
+## Degree of freedom corrections
+
+### Satterthwaite-type
+
+\textbf{Pan and Wall (DF\textsubscript{PW})} [9] derive the estimator
+
+$$ DF_{PW} = \frac{2E[V_R]^2}{Var[V_R]}$$
+where $V_R$ is a corrected sandwich variance as described above, and $Var[V_R]$ can be extracted from
+
+$$Cov(Vec[V_S]) = C^2 (V_M \otimes V_M) \left( \sum_{i=1}^C \frac{[P_i - \bar{P}][P_i - \bar{P}]^T}{C(C-1)} \right) (V_M \otimes V_M)$$
+where $P_i = vec[D_i^T V_{Wi}^{-1} Cov(Y_i) V_{Wi}^{-1} D_i^T]$
+
+\textbf{Fay and Graubard (DF\textsubscript{FG})}[5] derive the estimator
+$$ DF_{FG} = \frac{trace(\tilde{\psi}B_1)^2}{trace(\tilde{\psi}B_1\tilde{\psi}B_1)}$$
+where $\tilde{\psi} = diag[\tilde{\psi}_1,...,\tilde{\psi}_C]$
+
+$$\tilde{\psi}_i = w_i \left( \sum_{l=1}^C w_l \right) \left( \sum_{l=1}^C A_{FGl} D_l^T V_{Wl}^{-1} Cov(Y_l) V_{Wl}^{-1} D_l^T A_{FGl} \right)$$
+
+$w_i = K^T \left( \left[ \sum_{j \neq i} D_j^T V_{Wj} D_j \right]^{-1} - V_M \right) K$, $K$ is a vector indicating the null hypothesis $K^T\beta=K^T\beta_0$, $B_1 = G^TMG$, 
+
+
+$G = I_{PK}-diag[D_1^T V_{W1} D_1 ,...,D_C^T V_{WC} D_C] V_M [I_P,...,I_P]^T$, and
+
+
+$M=diag[A_{FG1} V_M K K^T V_M A_{AG1} ,..., A_{FGC} V_M K K^T V_M A_{AGC}]$.
+
+# Supplementary text 2: Simulation study methods
+
+## Data genaration
+
+### Generating varied cluster size
+
+Scenarios with varying cluster size had a cluster size sampled from a negative-binomial distribution to give minimum 12 observations per cluster (minumim 2 observations in each measurement occasion) and a coefficient of variation of 0.4. 
+
+The coefficient of variation is defined as  $CV=S/m$ where $S$ is the standard deviation of the cluster size, and $m$ is the mean cluster size.
+
+If we sample each measurement occasion within each cluster instead, the mean size of each cluster measurement occasion $n = m/6$ and variance of each cluster measurement occasion $S^2_n = S^2/6$
+ 
+Shifting the distribution so that the minimum sample in each cluster period is 2, the number of observations in each cluster measurement occasions are generated as $n_{ij}=2+\delta_{ij}$
+where 
+$$\delta_{ij} = NB\left(\frac{(n-2)^2}{S_n^2-(n-2)},\frac{(n-2)}{S_n^2} \right)$$
+
+### Generating marginal probabilities
+
+#### Correlation matrices
+
+Marginal probablities were calculated  using the following data generating model:
+
+$$logit(P(y_{ijk}=1)) = \alpha + \beta_j + \theta X_{ij} $$
+
+where 
+$y_{ijk}$ is the outcome of individual $k=1,...,K_{ij}$, in cluster $i=i,...,C$ in measurement occasion $j=1,...,6$. Note that there were 6 measurement occasions regardless of the trial design number of sequences. Designs with three sequences has 2 measurement occasions within each trial period.
+
+$\alpha$ is the log odds of the outcome in the control condition in the first measurement occasion
+
+$\beta_j$ is the log odds ratio comparing the outcome in $j$th measurement occasion to the first measurement occasion, hence $\beta_1=0$. 
+
+$\theta$ is the intervention effect.
+
+$X_{ij}$ is an indicator equal to 1 if cluster $i$ received the intervention for measurement occasion $j$ and 0 otherwise. In the design with three sequences, $X_{ij}$ is the same in measurement occasions 1 and 2, 3 and 4, and 5 and 6.
+
+Data were generated so that observations in the same cluster were correlated to one another. For each cluster, correlations were simulated as defined in the correlation matrix below:
+
+
+
+$$ R_{lk} = \rho r_0^{|j_k-j_l|} r_1^{|X_{i{j_k}} - X_{i{j_l}}|} \mathbf{J} + (1 - \rho)  \mathbf{I} $$
+
+where $\mathbf{J}$ is an $m_i$ x $m_i$ matrix of ones, $\mathbf{I}$ is an $m_i$ x $m_i$ identity matrix,  $m_i$  is the size of each cluster, $j_k$ is the measurement occasion containing observation $k$, $\rho$ is the correlation of an observation with another observation in the same cluster and same measurement occasion (the ICC), $r_0$ is the reduction in correletion between observations in the same cluster with each successive measurement occasion, and $r_1$ is the reduction in correlation between observations where one is in the control condition and one is in the intervention condition. $r_0$ and $r_1$ took the following values in each of the four correlation scenarios used in this study:
+
+Exchangeable:  $r_0 = 1$ and $r_1 = 1$
+
+Autocorrelated r= 0.6:  $r_0 = 0.6$ and $r_1 = 1$
+
+Autocorrelated r= 0.8: $r_0 = 0.8$ and $r_1 = 1$
+
+Autocorrelated r= 0.8 with reduced correlation between observations in different intervention conditions:  $r_0 = 0.8$ and $r_1 = 0.5$
+
+##### Example
+
+In the scenario with 24 observations per cluster with common cluster size so that there are 4 observations per observation occasion, and take a trial design with three sequences. The first row of the correlation matrix corresponds to the correlation of the first observation in the first period of a cluster with each other observation within the cluster. 
+
+A cluster in the first sequence (see figure one) will have a correlation matrix with the first line :
+
+
+$$ \left(
+\left[ \begin{matrix} 
+1 \\ \rho \\ \rho \\ \rho 
+\end{matrix} \right] ^T
+,
+\left[ \begin{matrix} 
+\rho r_0 \\ \rho r_0 \\ \rho r_0 \\ \rho r_0
+\end{matrix}  \right] ^T
+,
+\left[ \begin{matrix} 
+\rho r_0^2 \\ \rho r_0^2 \\ \rho r_0^2 \\ \rho r_0^2
+\end{matrix}  \right] ^T
+,
+\left[ \begin{matrix} 
+\rho r_0^3 \\ \rho r_0^3 \\ \rho r_0^3 \\ \rho r_0^3
+\end{matrix} \right] ^T
+,
+\left[ \begin{matrix} 
+\rho r_0^4 \\ \rho r_0^4 \\ \rho r_0^4 \\ \rho r_0^4
+\end{matrix} \right] ^T
+,
+\left[ \begin{matrix} 
+\rho r_0^5 \\ \rho r_0^5 \\ \rho r_0^5 \\ \rho r_0^5
+\end{matrix} \right] ^T
+\right) $$
+
+A cluster in the second sequence will have a correlation matrix with the first line:
+
+
+$$ \left(
+\left[ \begin{matrix} 
+1 \\ \rho \\ \rho \\ \rho
+\end{matrix} \right] ^T
+,
+\left[ \begin{matrix} 
+\rho r_0 \\ \rho r_0 \\ \rho r_0 \\ \rho r_0
+\end{matrix} \right] ^T
+,
+\left[ \begin{matrix} 
+\rho r_0^2 r_1 \\ \rho r_0^2 r_1 \\ \rho r_0^2 r_1 \\ \rho r_0^2 r_1
+\end{matrix} \right] ^T
+,
+\left[ \begin{matrix} 
+\rho r_0^3 r_1 \\ \rho r_0^3 r_1 \\ \rho r_0^3 r_1 \\ \rho r_0^3 r_1
+\end{matrix} \right] ^T
+,
+\left[ \begin{matrix} 
+\rho r_0^4 r_1 \\ \rho r_0^4 r_1 \\ \rho r_0^4 r_1 \\ \rho r_0^4 r_1
+\end{matrix} \right] ^T
+,
+\left[ \begin{matrix} 
+\rho r_0^5 r_1 \\ \rho r_0^5 r_1 \\ \rho r_0^5 r_1 \\ \rho r_0^5 r_1
+\end{matrix} \right] ^T
+\right) $$
+
+
+A cluster in the third sequence will have a correlation matrix with the first line:
+
+
+$$ \left(
+\left[ \begin{matrix} 
+1 \\ \rho \\ \rho \\ \rho
+\end{matrix} \right] ^T
+,
+\left[ \begin{matrix} 
+\rho r_0 \\ \rho r_0 \\ \rho r_0 \\ \rho r_0
+\end{matrix} \right] ^T
+,
+\left[ \begin{matrix} 
+\rho r_0^2 \\ \rho r_0^2 \\ \rho r_0^2 \\ \rho r_0^2
+\end{matrix} \right] ^T
+,
+\left[ \begin{matrix} 
+\rho r_0^3 \\ \rho r_0^3 \\ \rho r_0^3 \\ \rho r_0^3
+\end{matrix} \right] ^T
+,
+\left[ \begin{matrix} 
+\rho r_0^4 r_1 \\ \rho r_0^4 r_1 \\ \rho r_0^4 r_1 \\ \rho r_0^4 r_1
+\end{matrix} \right] ^T
+,
+\left[ \begin{matrix} 
+\rho r_0^5 r_1 \\ \rho r_0^5 r_1 \\ \rho r_0^5 r_1 \\ \rho r_0^5 r_1
+\end{matrix} \right] ^T
+\right) $$
+
+
+#### Sampling mechanism
+
+Using these probabilities and correlation matrices, we generated data using the methods described by Emrich and Piedmonte [10] as follows:
+
+1. The algorithm described by Emrish nd Piedmonte [10] is used to convert the binary correlation matrix into a covariance matrix for simulating data from a normal distribution. 
+
+2. A multivariate normal distribution, with zero means and the converted covariance matrix is used to generate correlated standard normal variables for observations in each cluster. 
+
+3. The probability of the binary outcome is converted into quantiles of a standard normal distribution (e.g. a probability of 50% leads to a value of 0)
+
+4. The generated correlated continuous outcomes produced in step 2 are dichotomised based on the normal quantiles produced in step 3, to give the simulated binary data.
+
+The code for this simulation study will be made available on github at https://github.com/jenniferthompson1/SW-CRT-GEE
+
+## Implementation of analysis methods
+Generalised estimating equations were implemented with the package geepack [11]. We used the geesmv package [12] to implement all standard errors and to estimate Pan and Wall degrees of freedom. We used the saws package [5] to implement the Fay and Graubard degrees of freedom, with the d5 option.  Both saws and geesmv are designed to be used with the package gee, and some small adaptations were required for use with geepack. Details of these adaptations are availabe on request.
+
+## Analysis of results
+A small number of corrections resulted in very large standard errors. Standard errors larger than 5 (for log OR=0.26) were excluded from all further analyses and treated as methods that did not converge. Sensitivity analyses showed that results were similar when excluding results with different cut-off values (results not shown).
+
+As well as graphical exploration of the simulation study data, we also used linear regression models to explore the association between scenario characteristics and analysis-method performance measures. The linear regression models included each simulation scenario characteristic listed in main table 1 and likelihood ratio tests were used to test for association between each characteristic and the outcome. Supplementary tables 1 - 7 shows the result of these regression analyses. Comparisons on power presented in the paper are marginal means estimated from such a regression model to deal with confounding by the subset of scenarios selected for 300 observations per cluster.
+
+
+# Supplementary text references
+
+1. Liang KY and Zeger SL. Longitudinal Data-Analysis Using Generalized Linear-Models. Biometrika 1986; 73: 13-22
+
+2. Kauermann G and Carroll RJ. A note on the efficiency of sandwich covariance matrix estimation. J Am Stat Assoc 2001; 96: 1387-1396
+
+3. Klema V and Laub A. The singular value decomposition: Its computation and some applications. IEEE Transactions on automatic control 1980; 25(2): 164-176
+
+4. Gallis JA, Li F and Turner EL. XTGEEBCV: Stata module to compute bias-corrected (small-sample) standard errors for generalized estimating equations. Stata Journal 2020;  20(2): 363-381
+
+5. Fay M P and Graubard B I.Small-sample adjustments for Wald-type tests using sandwich estimators. Biometrics 2001; 57: 1198-206
+
+6. Mancl LA and DeRouen TA. A covariance estimator for GEE with improved small-sample properties. Biometrics 2001; 57: 126-134
+
+7. Morel JG, Bokossa MC and Neerchal NK. Small sample correction for the variance of GEE estimators. Biometrical Journal 2003; 45: 395-409
+
+8. Mackinnon JG and White H. Some Heteroskedasticity-Consistent Covariance-Matrix Estimators with Improved Finite-Sample Properties. Journal of Econometrics 1985; 29: 305-325
+
+9. Pan W and Wall MM. Small-sample adjustments in using the sandwich variance estimator in generalized estimating equations. Stat Med 2002; 21: 1429-1441
+
+10. Emrich L J and Piedmonte M R. A Method for Generating High-Dimensional Multivariate Binary Variates. The American Statistician 1991; 45: 302-304
+
+11. H\o jsaard S, Halekoh U & YAan J The R Package geepack for Generalized Estimating Equations Journal of Statistical Software 2006; 15(2): 1-11
+
+12. Wang M geesmv: Modified Variance Estimators for Generalized Estimating Equations. R package version 1.3. 2015.
+
+
+
+
+
+```{r setup, include=FALSE}
+
+library("nlme")
+library("kableExtra")
+
+knitr::opts_chunk$set(echo = FALSE, 
+                      warning = FALSE,
+                      results = "asis", 
+                      fig.width = 28)
+
+options(knitr.kable.NA = '')
+options(knitr.table.format = 'latex')
+
+
+
+```
+
+```{r prepare_data}
+
+### Load data ###
+
+
+load("./data/crstatistics_phase_1.RData")
+dta1.stat <- dta.stat
+rm(dta.stat)
+
+load("./data/crstatistics_phase_2.RData")
+dta2.stat <- dta.stat
+rm(dta.stat)
+
+load("./KC_approx/crstatistics_KC_correction.RData")
+dtakc.stat <- dta.stat
+
+wc <- c("Independent", "Exchangeable")
+
+phase1var <- c("Correlation_structure", "ICC", "Sequences", "Mean_cluster_size", "Varying_cluster_size")
+phase2var <- c("Clusters", "Correlation_structure", "ICC", "Sequences", "Mean_cluster_size", "Varying_cluster_size")
+
+
+
+```
+
+``` {r function}
+fn.results <- function(mdl, pvalues) {
+  
+  tbl <- as.data.frame(coef(summary(mdl)))
+  
+  # Create statistics to show in table
+  
+  tbl$lb <- tbl$Estimate - 1.96 * tbl$`Std. Error`
+  tbl$ub <- tbl$Estimate + 1.96 * tbl$`Std. Error`
+  
+  
+  tbl$Effect <- paste0(round(tbl$Estimate, 1), " (", round(tbl$lb, 1), ", ", round(tbl$ub, 1), ")")
+  
+  # Add intercept p-value to p-values table
+  pvalues[pvalues$var == "(Intercept)","p"] <- tbl["(Intercept)",4]
+  
+  pvalues$`P value` <- ifelse(pvalues$p >= 0.01, 
+                              as.character(round(pvalues$p, 2)),
+                              ifelse(pvalues$p < 0.01 & pvalues$p >= 0.001, 
+                                     as.character(round(pvalues$p, 3)),
+                                     "<0.001"))
+  
+  # Create variable columns
+  
+  rows <- data.frame(Characteristic = unlist(mdl$xlevels), 
+                     var = rep(names(mdl$xlevels), times = sapply(mdl$xlevels, length)), 
+                     order = unlist(lapply(sapply(mdl$xlevels, length), function(x) 1:x)),
+                     stringsAsFactors = FALSE)
+  
+  rows <- rbind(rows,
+                cbind(Characteristic = names(mdl$xlevels),
+                      var = names(mdl$xlevels),
+                      order = 0),
+                c("", "(Intercept)", 0))
+  
+  rows <- rows[order(rows[,2], rows[,3]),]
+  
+  # Merge statistics and variables
+  
+  rows$mergevar <- paste0(rows$var, rows$Characteristic)
+  
+  tbl$mergevar <- rownames(tbl)
+  
+  tbl <- merge(tbl, rows, by = "mergevar", sort = FALSE, all = TRUE)
+  
+  # Merge in p values
+  
+  pvalues$order <- 0
+  
+  tbl <- merge(
+    tbl, 
+    pvalues, 
+    by= c("var", "order"),
+    all = TRUE)
+  
+  tbl$Effect <- ifelse(tbl$order == 1 & is.na(tbl$Effect), "0", tbl$Effect)
+  
+  tbl$Characteristic <- gsub("_", " ", tbl$Characteristic)
+  
+  tbl[tbl$mergevar == "(Intercept)", "Characteristic"] <- "Intercept"
+  
+  tbl[tbl$mergevar == "(Intercept)", "var"] <- "A"
+  
+  
+  tbl[order(tbl$var, tbl$order),c("mergevar", "Characteristic", "Effect", "P value")]
+}
+
+```
+
+
+## Supplementary Table 1: Phase one factors associated with intervention effect estimate standardised bias
+
+```{r phase1_tblbias}
+
+################################################################
+
+# Regression of Intervention effect estimate bias
+
+################################################################
+
+mdta <- subset(dta1.stat, dfname == "cmp" & sa == "lz")
+
+mdl <- lm(
+  as.formula(paste("stdbias ~ ", paste(phase1var, collapse="+"))),
+  data = mdta
+)
+
+mdl.p <- data.frame(
+  var = c("(Intercept)", phase1var),
+  p = rep(NA, 1 + length(phase1var)) 
+)
+
+for(l in phase1var){
+  
+  mdl2 <- lm(
+    as.formula(paste("stdbias ~ ", paste(phase1var[phase1var != l], collapse="+"))),
+    data = mdta
+  )
+  
+  mdl.p[mdl.p$var == l,"p"] <- anova(
+    mdl2, 
+    mdl, 
+    test = "LRT"
+  )[2,5]
+  
+}
+
+knitr::kable(fn.results(mdl, mdl.p)[,c("Characteristic", "Effect", "P value")], row.names = FALSE, booktabs = TRUE)
+
+```
+
+\newpage
+
+## Supplementary Table 2: Phase one factors associated with relative error in standard errors of each correction
+
+```{r phase1_tblrelse}
+
+################################################################
+
+# Regression of relative error in standard errors
+
+################################################################
+
+SA <- c("Uncorr", "KC", "FG", "MD", "MBN", "MW")
+df <-  c("fgd5", "w", "cmp", "cpmp", "cpmcp")
+
+
+for(i in SA) {
+  for(j in wc){
+    mdta <- subset(dta1.stat, dfname == "cmp" & SA == i & wc == j)
+    
+    mdl <- lm(
+      as.formula(paste("relse ~ ", paste(phase1var, collapse="+"))), 
+      data = mdta
+    )
+    
+    mdl.p <-  data.frame(
+      var = c("(Intercept)", phase1var),
+      p = rep(NA, 1 + length(phase1var))
+    ) 
+    
+    for(l in phase1var){
+      
+      mdl2 <- lm(
+        as.formula(paste("relse ~ ", paste(phase1var[phase1var != l], collapse="+"))),
+        data = mdta
+      )
+      
+      mdl.p[mdl.p$var == l,"p"] <- anova(
+        mdl2, 
+        mdl, 
+        test = "LRT"
+      )[2,5]
+      
+    }
+    
+    assign(paste0("mdl.", i,".",j), 
+           mdl)
+    
+    assign(paste0("p.", i,".",j), 
+           mdl.p)
+    
+  }
+}
+
+for(i in SA) {
+  
+  if(i %in% c("FG","MBN")) cat("\n\\newpage\n")
+  
+  t1 <- fn.results(get(paste0("mdl.", i, ".Independent")), 
+                   get(paste0("p.", i, ".Independent")))
+  t2 <- fn.results(get(paste0("mdl.", i, ".Exchangeable")),
+                   get(paste0("p.", i, ".Exchangeable")))
+  
+  temp <- merge(t1, 
+                t2, 
+                by = c("mergevar", "Characteristic"),
+                sort = FALSE)
+  
+  temp$mergevar <- NULL
+  
+  cat(paste0("Standard error correction: ", i))
+  
+  print(knitr::kable(temp, col.names = c("Characteristics", 
+                                         "Effect", 
+                                         "P value", 
+                                         "Effect",
+                                         "P value"),
+                     booktabs = TRUE) %>%
+          kable_styling(latex_options = "hold_position") %>%
+          add_header_above(c(" " = 1, "Independent" = 2, "Exchangeable" = 2)))
+}
+
+```
+
+\newpage
+
+## Supplementary Table 3: Phase one degrees of freedom
+
+
+``` {r phase1_tbldf}
+
+
+
+for(i in  c("fg.w", "fg.fgd5")) {
+  for(j in wc){
+    
+    mdta <- subset(dta1.stat, mdl == i & wc == j)
+    
+    mdl <- lm(
+      as.formula(paste("meandf ~ ", paste(phase1var, collapse="+"))),
+      data = mdta)
+    
+    mdl.p <-  data.frame(
+      var = c("(Intercept)", phase1var),
+      p = rep(NA, 1 + length(phase1var))
+    ) 
+    
+    for(l in phase1var){
+      
+      mdl2 <- lm(
+        as.formula(paste("meandf ~ ", paste(phase1var[phase1var != l], collapse="+"))),
+        data = mdta
+      )
+      
+      mdl.p[mdl.p$var == l, "p"] <- anova(
+        mdl2, 
+        mdl, 
+        test = "LRT"
+      )[2,5]
+      
+    }
+    
+    assign(paste0("mdl.", i,".",j), 
+           mdl)
+    
+    assign(paste0("p.", i,".",j), 
+           mdl.p)
+    
+  }
+}
+
+for(i in c("fg.w", "fg.fgd5")) {
+  
+  t1 <- fn.results(get(paste0("mdl.", i, ".Independent")),
+                   get(paste0("p.", i, ".Independent")))
+  
+  t2 <- fn.results(get(paste0("mdl.", i, ".Exchangeable")),
+                   get(paste0("p.", i, ".Exchangeable")))
+  
+  temp <- merge(t1, 
+                t2, 
+                by = c("mergevar", "Characteristic"),
+                sort = FALSE)
+  
+  temp$mergevar <- NULL
+  
+  if (i == "fg.w") l <- "PW"
+  else if (i == "fg.fgd5") l <- "FG"
+  
+  cat(paste0("Degrees of freedom: ", l))
+  
+  print(knitr::kable(temp, col.names = c("Characteristics", 
+                                         "Effect", 
+                                         "P value", 
+                                         "Effect",
+                                         "P value"),
+                     booktabs = TRUE) %>%
+          kable_styling(latex_options = "hold_position") %>%
+          add_header_above(c(" " = 1, "Independent" = 2, "Exchangeable" = 2)))
+  
+  cat("\n\\newpage\n")
+}
+
+
+
+```
+
+
+\newpage
+
+\blandscape
+
+## Supplementary Table 4: Phase one factors associated with coverage of confidence intervals
+
+```{r phase1_tblcoverage}
+
+################################################################
+
+# Regression of coverage
+
+################################################################
+
+
+
+
+for(i in c("KC", "FG")) {
+  for(j in wc) {
+    for(k in df){
+      
+      mdta <- subset(dta1.stat, SA == i & wc == j & dfname == k)
+      
+      mdl <- lm(as.formula(paste("coverage ~ ", paste(phase1var, collapse="+"))),
+                data = mdta)
+      
+      mdl.p <-  data.frame(
+        var = c("(Intercept)", phase1var),
+        p = rep(NA, 1 + length(phase1var))) 
+      
+      for(l in phase1var){
+        
+        mdl2 <- lm(
+          as.formula(paste("coverage ~ ", paste(phase1var[phase1var != l], collapse="+"))),
+          data = mdta)
+        
+        mdl.p[mdl.p$var == l, "p"] <- anova(
+          mdl2, 
+          mdl, 
+          test = "LRT")[2,5]
+        
+      }
+      
+      assign(paste0("mdl.", i,".",j,".",k), 
+             mdl)
+      
+      assign(paste0("p.", i,".",j,".",k), 
+             mdl.p)
+    }
+  }
+}
+
+
+for(i in c("KC", "FG")) {
+  
+  cat(paste0("Standard error correction: ", i))
+  
+  
+  temp <- lapply(df,
+                 function(x) {
+                   
+                   t1 <- fn.results(get(paste0("mdl.", i, ".Independent.", x)),
+                                    get(paste0("p.", i, ".Independent.", x)))
+                   
+                   t2 <- fn.results(get(paste0("mdl.", i, ".Exchangeable.", x)),
+                                    get(paste0("p.", i, ".Exchangeable.", x)))
+                   merge(t1, 
+                         t2, 
+                         by = c("mergevar", "Characteristic"),
+                         sort = FALSE)
+                   
+                 })
+  
+  temp2 <- merge(temp[[1]], 
+                 temp[[4]], 
+                 by = c("mergevar", "Characteristic"), 
+                 sort = FALSE)
+  
+  temp2$mergevar <- NULL
+  
+  temp3 <- merge(temp[[2]], 
+                 temp[[3]], 
+                 by = c("mergevar", "Characteristic"), 
+                 sort = FALSE)
+  
+  temp3$mergevar <- NULL
+  
+  temp[[5]]$mergevar <- NULL
+  
+  print(knitr::kable(temp2, col.names = c("Characteristics", 
+                                          rep(c("Effect", 
+                                                "P value"), 4)),
+                     booktabs = TRUE) %>%
+          kable_styling(latex_options = "hold_position") %>%
+          add_header_above(c(" " = 1,
+                             "Independent" = 2, "Exchangeable" = 2, 
+                             "Independent" = 2, "Exchangeable" = 2)) %>%
+          add_header_above(c(" " = 1,
+                             "FG" = 4, 
+                             "PW" = 4)))
+  
+  cat("\n\\newpage\n")
+  
+  print(knitr::kable(temp3, col.names = c("Characteristics", 
+                                          rep(c("Effect", 
+                                                "P value"), 4)),
+                     booktabs = TRUE) %>%
+          kable_styling(latex_options = "hold_position") %>%
+          add_header_above(c(" " = 1,
+                             "Independent" = 2, "Exchangeable" = 2, 
+                             "Independent" = 2, "Exchangeable" = 2)) %>%
+          add_header_above(c(" " = 1,
+                             "C-P" = 4, 
+                             "CP-P" = 4)))
+  
+  cat("\n\\newpage\n")
+  
+  print(knitr::kable(temp[[5]], col.names = c("Characteristics", 
+                                              rep(c("Effect", 
+                                                    "P value"), 2)),
+                     booktabs = TRUE) %>%
+          kable_styling(latex_options = "hold_position") %>%
+          add_header_above(c(" " = 1,
+                             "Independent" = 2, "Exchangeable" = 2)) %>%
+          add_header_above(c(" " = 1,
+                             "CP-C-P" = 4)))
+  
+  cat("\n\\newpage\n")
+}
+
+
+
+```
+
+\elandscape
+
+\newpage
+
+# Phase 2
+
+## Supplementary Table 5: Phase two factors associated with intervention effect estimate bias
+
+```{r phase2_tblbias}
+
+################################################################
+
+# Regression of Intervention effect estimate bias
+
+################################################################
+
+mdta <- subset(dta2.stat, dfname == "inf" & sa == "lz")
+
+mdl <- lm(as.formula(paste("stdbias ~ ", paste(phase2var, collapse="+"))),
+          data = mdta)
+
+mdl.p <-  data.frame(
+  var = c("(Intercept)", phase2var),
+  p = rep(NA, 1 + length(phase2var))) 
+
+for(l in phase2var){
+  
+  mdl2 <- lm(
+    as.formula(paste("stdbias ~ ", paste(phase2var[phase2var != l], collapse="+"))),
+    data = mdta)
+  
+  mdl.p[mdl.p$var == l, "p"] <- anova(
+    mdl2, 
+    mdl, 
+    test = "LRT")[2,5]
+  
+}
+
+
+knitr::kable(fn.results(mdl, mdl.p)[,c("Characteristic", "Effect", "P value")], row.names = FALSE, booktabs = TRUE)
+
+```
+
+\newpage
+
+## Supplementary Table 6: Phase two factors associated with relative error in standard errors of each correction
+
+```{r phase2_tblrelse}
+
+################################################################
+
+# Regression of relative error in standard errors
+
+################################################################
+SA <- c("Uncorr", "KC", "FG")
+
+for(i in  c("lz.inf", "fg.cmp", "kc.cmp")) {
+  for(j in wc){
+    
+    mdta <- subset(dta2.stat, mdl == i & wc == j)
+    
+    mdl <- lm(as.formula(paste("relse ~ ", paste(phase2var, collapse="+"))),
+              data = mdta)
+    
+    mdl.p <-  data.frame(
+      var = c("(Intercept)", phase2var),
+      p = rep(NA, 1 + length(phase2var))) 
+    
+    for(l in phase2var){
+      
+      mdl2 <- lm(
+        as.formula(paste("relse ~ ", paste(phase2var[phase2var != l], collapse="+"))),
+        data = mdta)
+      
+      mdl.p[mdl.p$var == l, "p"] <- anova(
+        mdl2, 
+        mdl, 
+        test = "LRT")[2,5]
+      
+    }
+    
+    assign(paste0("mdl.", i,".",j), 
+           mdl)
+    
+    assign(paste0("p.", i,".",j), 
+           mdl.p)
+  }
+}
+
+for(i in  c("lz.inf", "kc.cmp", "fg.cmp")) {
+  
+  t1 <- fn.results(get(paste0("mdl.", i, ".Independent")),
+                   get(paste0("p.", i, ".Independent")))
+  
+  t2 <- fn.results(get(paste0("mdl.", i, ".Exchangeable")),
+                   get(paste0("p.", i, ".Exchangeable")))
+  
+  temp <- merge(t1, 
+                t2, 
+                by = c("mergevar", "Characteristic"),
+                sort = FALSE)
+  
+  temp$mergevar <- NULL
+  
+  if (i == "lz.inf") l <- "Uncorr"
+  else if (i == "kc.cmp") l <- "KC"
+  else if (i == "fg.cmp") l <- "FG"
+  
+  cat(paste0("Standard error correction: ", l))
+  
+  print(knitr::kable(temp, col.names = c("Characteristics", 
+                                         "Effect", 
+                                         "P value", 
+                                         "Effect",
+                                         "P value"),
+                     booktabs = TRUE) %>%
+          kable_styling(latex_options = "hold_position") %>%
+          add_header_above(c(" " = 1, "Independent" = 2, "Exchangeable" = 2)))
+  
+  cat("\n\\newpage\n")
+}
+
+```
+
+
+
+\newpage
+
+\blandscape
+
+## Supplementary Table 7: Phase two factors associated with coverage of confidence intervals
+
+```{r phase2_tblcoverage}
+
+################################################################
+
+# Regression of coverage
+
+################################################################
+df <-  c("fgd5", "cmp")
+
+
+
+for(i in c("KC", "FG")) {
+  for(j in wc) {
+    for(k in df){
+      
+      mdta <- subset(dta2.stat, SA == i & wc == j & dfname == k)
+      
+      mdl <- lm(as.formula(paste("coverage ~ ", paste(phase2var, collapse="+"))),
+                data = mdta)
+      
+      mdl.p <-  data.frame(
+        var = c("(Intercept)", phase2var),
+        p = rep(NA, 1 + length(phase2var))) 
+      
+      for(l in phase2var){
+        
+        mdl2 <- lm(
+          as.formula(paste("coverage ~ ", paste(phase2var[phase2var != l], collapse="+"))),
+          data = mdta)
+        
+        mdl.p[mdl.p$var == l, "p"] <- anova(
+          mdl2, 
+          mdl, 
+          test = "LRT")[2,5]
+        
+      }
+      
+      assign(paste0("mdl.", i,".",j,".",k), 
+             mdl)      
+      
+      assign(paste0("p.", i,".",j,".",k), 
+             mdl.p)      
+      
+    }
+  }
+}
+
+
+for(i in c("KC", "FG")) {
+  
+  cat(paste0("Standard error correction: ", i))
+  
+  
+  temp <- lapply(df,
+                 function(x) {
+                   
+                   t1 <- fn.results(get(paste0("mdl.", i, ".Independent.", x)),
+                                    get(paste0("p.", i, ".Independent.", x)))
+                   
+                   t2 <- fn.results(get(paste0("mdl.", i, ".Exchangeable.", x)),
+                                    get(paste0("p.", i, ".Exchangeable.", x)))
+                   
+                   merge(t1,
+                         t2, 
+                         by = c("mergevar", "Characteristic"),
+                         sort = FALSE)
+                 })
+  temp2 <- merge(temp[[1]], temp[[2]], by = c("mergevar", "Characteristic"), sort = FALSE)
+  
+  temp2$mergevar <- NULL
+  
+  print(knitr::kable(temp2, col.names = c("Characteristics", 
+                                          rep(c("Effect", 
+                                                "P value"), 4)),
+                     booktabs = TRUE) %>%
+          kable_styling(latex_options = "hold_position") %>%
+          add_header_above(c(" " = 1,
+                             "Independent" = 2, "Exchangeable" = 2, 
+                             "Independent" = 2, "Exchangeable" = 2)) %>%
+          add_header_above(c(" " = 1,
+                             "FG" = 4, 
+                             "C-P" = 4)))
+  
+  cat("\n\\newpage\n")
+  
+  
+}
+
+
+
+```
+
+\elandscape
+
+\newpage
+
+
+
+## Supplementary Figure 1: Phase one intervention effect estimate bias
+
+``` {r phase1_figbias}
+
+knitr::include_graphics("./output/phase1_rxbias.pdf")
+
+```
+
+
+## Supplementary Figure 2: Phase one relative error in standard errors by true correlation structure
+
+``` {r phase1_figse_true}
+
+knitr::include_graphics("./output/phase1_se_Corr_str.pdf")
+
+```
+
+## Supplementary Figure 3: Phase one relative error in standard errors by ICC
+
+``` {r phase1_figse_icc}
+
+knitr::include_graphics("./output/phase1_se_ICC.pdf")
+
+```
+
+
+## Supplementary Figure 4: Phase one relative error in standard errors by varying cluster size
+
+``` {r phase1_figse_vary}
+
+knitr::include_graphics("./output/phase1_se_Varying_cluster_size.pdf")
+
+```
+
+
+## Supplementary Figure 5: Phase one relative error in standard errors by sequences
+
+``` {r phase1_figse_seq}
+
+knitr::include_graphics("./output/phase1_se_Sequences.pdf")
+
+```
+
+
+
+## Supplementary Figure 6: Phase two intervention effect estimate bias
+
+``` {r phase2_figbias}
+
+knitr::include_graphics("./output/phase2_rxbias.pdf")
+
+```
+
+
+## Supplementary Figure 7: Phase two relative error in FG and KC standard errors by ICC
+
+``` {r phase2_figrelse_icc}
+
+knitr::include_graphics("./output/phase2_se_hist_ICC.pdf")
+
+```
+
+
+
+## Supplementary Figure 8: Phase two relative error in uncorrected standard errors
+
+``` {r phase2_figrelse_uncorrected}
+
+knitr::include_graphics("./output/phase2_se_hist_uncorr.pdf")
+
+```
+
+## Supplementary Figure 9: Phase two difference in DF$_{FG}$ and DF$_{C-P}$ 
+
+``` {r phase2_figdf}
+
+knitr::include_graphics("./output/phase2_df.pdf")
+
+```
+
+
+## Supplementary Figure 10: Phase two confidence interval coverage of uncorrected standard errors 
+
+``` {r phase2_figcov}
+
+knitr::include_graphics("./output/phase2_coverage_uncorr.pdf")
+
+```
+
+
+## Supplementary Figure 11: Phase two comparison of power using FG and KC standard errors with an indpendent working correlation matrix
+
+``` {r phase2_figpowsa}
+
+knitr::include_graphics("./output/phase2_power_sa.pdf")
+
+```
+
+## Supplementary Figure 12: Phase two comparison of power using DF$_{FG}$ and DF$_{C-P}$ with an indpendent working correlation matrix
+
+``` {r phase2_figpowdf}
+
+knitr::include_graphics("./output/phase2_power_DF.pdf")
+
+```
+
+## Supplementary Figure 13: Phase two comparison of power using an exchangeable and indpendent working correlation matrix with DF$_{FG}$ 
+
+``` {r phase2_figpowwc}
+
+knitr::include_graphics("./output/phase2_power_wc.pdf")
+
+```
+
+
+## Supplementary Figure 14: Post hoc analysis: Relative error in KC-approximation standard errors in phase 2 scenarios
+
+``` {r posthoc_se}
+
+knitr::include_graphics("./output/kcapprox_se.pdf")
+
+```
+
+## Supplementary Figure 15: Post hoc analysis: 95% confidence interval coverage with KC-approximation standard errors in phase 2 scenarios
+
+``` {r posthoc_ci}
+
+knitr::include_graphics("./output/kcapprox_coverage.pdf")
+
+```
+
+
+## Supplementary Figure 16: Post hoc analysis: 95% confidence interval coverage with KC-approximation standard errors in phase 2 scenarios by correlation stucture
+
+``` {r posthoc_ci2}
+
+knitr::include_graphics("./output/kcapprox_coverage_cs.pdf")
+
+```

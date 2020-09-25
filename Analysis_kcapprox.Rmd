@@ -1,0 +1,729 @@
+---
+title: "KC correction Results"
+output: pdf_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r gph_parameters_and_packages, include=FALSE}
+
+library("dplyr")
+library("ggplot2")
+library("knitr")
+library("kableExtra")
+library("ggeffects")
+
+
+theme <-   theme(text = element_text(size = 10),
+                 panel.background = element_rect(fill = "white"),
+                 plot.margin = unit(c(0.1,0.1,0.1,0), "cm"),
+                 axis.line = element_line(size = 0.5),
+                 axis.line.x = element_line(color="black"),
+                 axis.line.y = element_line(color="black"),
+                 legend.key = element_blank(),
+                 legend.key.size = unit(0.3,"cm"),
+                 legend.position = "bottom",
+                 legend.background = element_rect(colour = "black"),
+                 strip.background = element_rect(fill = "grey95"))
+
+```
+
+```{r loaddata}
+
+
+load("./KC_approx/crstatistics_KC_correction.RData")
+dtakc.stat <- dta.stat
+
+dtakc.stat$sa <- factor("kcapprox", levels = c("lz", "kc", "fg", "kcapprox"))
+
+load("./data/crstatistics_phase_2.RData")
+dta2.stat <- dta.stat
+
+dta2.stat <- dta2.stat[dta2.stat$sa %in% c("fg", "kc") & dta2.stat$dfname %in% c("cmp", "fgd5"),]
+
+dta2.stat <- dta2.stat[,names(dta2.stat) %in% names(dtakc.stat)]
+rm(dta.stat)
+
+
+dta.stat <- rbind(dta2.stat, dtakc.stat)
+  
+dta.stat$relsetrunc <- ifelse(dta.stat$relse>30, 30,dta.stat$relse)
+
+
+dta.stat$SA <- factor(dta.stat$sa, levels = c("fg", "kc", "kcapprox"))
+levels(dta.stat$SA)[levels(dta.stat$SA)=="kc"] <- "KC"
+levels(dta.stat$SA)[levels(dta.stat$SA)=="kcapprox"] <- "KC-approx"
+levels(dta.stat$SA)[levels(dta.stat$SA)=="fg"] <- "FG"
+
+dta.stat$DF <- dta.stat$dfname
+levels(dta.stat$DF)[levels(dta.stat$DF) == "fgd5"] <- "FG"
+levels(dta.stat$DF)[levels(dta.stat$DF) == "cmp"] <- "C-P"
+
+```
+
+
+### Summarise scenarios
+
+```{r scenarios}
+print("Number of scenarios:")
+
+ length(unique(dtakc.stat$scenario))
+ 
+print("ICC:")
+
+ kable(table(dtakc.stat$ICC))
+
+print("Correlation structure:")
+
+ kable(table(dtakc.stat$Correlation_structure))
+ 
+print("Sequences:")
+
+ kable(table(dtakc.stat$Sequences))
+ 
+print("Clusters:")
+
+ kable(table(dtakc.stat$clusters))
+
+print("Cluster size:")
+
+ kable(table(dtakc.stat$Mean_cluster_size))
+
+ kable(table(dtakc.stat$Varying_cluster_size))
+ 
+
+```
+
+### Convergence
+
+
+
+```{r convergence}
+summary(dtakc.stat$convergep)
+
+ggplot(data = dtakc.stat, aes(x = convergep)) + 
+  facet_wrap(dfname ~ wc + sa) +
+  geom_vline(xintercept = 0, linetype = "longdash", color = "grey80", size = 1)+
+  geom_vline(xintercept = -10, linetype = "longdash", color = "grey80", size = 1)+
+  geom_vline(xintercept = 10, linetype = "longdash", color = "grey80", size = 1) +
+  geom_histogram(bins = 15) + 
+  xlab("Percentage not converged") +
+  scale_y_continuous(breaks = 2 * 0:6) +
+  theme
+```
+
+
+### Bias
+
+```{r bias_histograms}
+ggplot(data = subset(dtakc.stat, dfname == "cmp"), aes(x = stdbias)) + 
+  facet_wrap( ~ wc) +
+  geom_vline(xintercept = 0, linetype = "longdash", color = "grey80", size = 1)+
+  geom_vline(xintercept = -10, linetype = "longdash", color = "grey80", size = 1)+
+  geom_vline(xintercept = 10, linetype = "longdash", color = "grey80", size = 1) +
+  geom_histogram(bins = 15) + 
+  xlab("Intervention effect estimate standardised bias") +
+  scale_y_continuous(breaks = 2 * 0:6) +
+  theme
+
+#ggsave("./output/phase1_rxbias.pdf", width = 16, height = 12, units = "cm")
+```
+
+
+
+### Standard errors
+```{r se_histograms}
+
+ggplot(data = subset(dtakc.stat, dfname = "cmp"), aes(x = relse)) + 
+  geom_vline(xintercept = 0, linetype = "longdash", color = "grey80", size = 0.5) +
+  geom_vline(xintercept = -10, linetype = "longdash", color = "grey80", size = 0.5) +
+  geom_vline(xintercept = 10, linetype = "longdash", color = "grey80", size = 0.5) +
+  geom_histogram(bins = 35) + 
+  facet_grid(Clusters ~ wc) +
+  scale_y_continuous(breaks = function(x) c(0,floor(x[2]))) +
+  xlab("Standard error relative error (%)") +
+  theme
+
+
+ggplot(data =  subset(dtakc.stat, dfname = "cmp"), aes(x = relse, fill = ICC)) + 
+  geom_vline(xintercept = 0, linetype = "longdash", color = "grey80", size = 0.5) +
+  geom_vline(xintercept = -10, linetype = "longdash", color = "grey80", size = 0.5) +
+  geom_vline(xintercept = 10, linetype = "longdash", color = "grey80", size = 0.5) +
+  geom_histogram(bins = 35) + 
+  facet_grid(Clusters ~ wc) +
+  scale_y_continuous(breaks = function(x) c(0,floor(x[2]))) +
+  xlab("Standard error relative error (%)") +
+  theme
+
+ggplot(data =  subset(dtakc.stat, dfname = "cmp"), aes(x = relse, fill = Varying_cluster_size)) + 
+  geom_vline(xintercept = 0, linetype = "longdash", color = "grey80", size = 0.5) +
+  geom_vline(xintercept = -10, linetype = "longdash", color = "grey80", size = 0.5) +
+  geom_vline(xintercept = 10, linetype = "longdash", color = "grey80", size = 0.5) +
+  geom_histogram(bins = 35) + 
+  facet_grid(Clusters ~ wc) +
+  scale_y_continuous(breaks = function(x) c(0,floor(x[2]))) +
+  xlab("Standard error relative error (%)") +
+  theme
+ 
+ggplot(data =  subset(dtakc.stat, dfname = "cmp"), aes(x = relse, fill = Sequences)) + 
+  geom_vline(xintercept = 0, linetype = "longdash", color = "grey80", size = 0.5) +
+  geom_vline(xintercept = -10, linetype = "longdash", color = "grey80", size = 0.5) +
+  geom_vline(xintercept = 10, linetype = "longdash", color = "grey80", size = 0.5) +
+  geom_histogram(bins = 35) + 
+  facet_grid(Clusters ~ wc) +
+  scale_y_continuous(breaks = function(x) c(0,floor(x[2]))) +
+  xlab("Standard error relative error (%)") +
+  theme
+ 
+
+ggplot(data =  subset(dtakc.stat, dfname = "cmp"), aes(x = relse, fill = Mean_cluster_size)) + 
+  geom_vline(xintercept = 0, linetype = "longdash", color = "grey80", size = 0.5) +
+  geom_vline(xintercept = -10, linetype = "longdash", color = "grey80", size = 0.5) +
+  geom_vline(xintercept = 10, linetype = "longdash", color = "grey80", size = 0.5) +
+  geom_histogram(bins = 35) + 
+  facet_grid(Clusters ~ wc) +
+  scale_y_continuous(breaks = function(x) c(0,floor(x[2]))) +
+  xlab("Standard error relative error (%)") +
+  theme
+ 
+
+ggplot(data =  subset(dtakc.stat, dfname = "cmp"), aes(x = relse, fill = Correlation_structure)) + 
+  geom_vline(xintercept = 0, linetype = "longdash", color = "grey80", size = 0.5) +
+  geom_vline(xintercept = -10, linetype = "longdash", color = "grey80", size = 0.5) +
+  geom_vline(xintercept = 10, linetype = "longdash", color = "grey80", size = 0.5) +
+  geom_histogram(bins = 35) + 
+  facet_grid(Clusters ~ wc) +
+  scale_y_continuous(breaks = function(x) c(0,floor(x[2]))) +
+  xlab("Standard error relative error (%)") +
+  theme
+ 
+#########
+
+# Compare with KC and KC-approx
+
+ggplot(data = subset(dta.stat, sa %in% c("kc", "kcapprox") & dfname == "cmp"), aes(x = relsetrunc)) + 
+  geom_vline(xintercept = 0, linetype = "longdash", color = "grey80", size = 0.5) +
+  geom_vline(xintercept = -10, linetype = "longdash", color = "grey80", size = 0.5) +
+  geom_vline(xintercept = 10, linetype = "longdash", color = "grey80", size = 0.5) +
+  geom_histogram(bins = 35) + 
+  facet_grid(Clusters ~ SA + wc) +
+  scale_y_continuous(breaks = function(x) c(0,floor(x[2]))) +
+  xlab("Standard error relative error (%)") +
+  theme
+
+ ggsave("./output/kcapprox_se.pdf", width = 16, height = 12, units = "cm")
+
+#########
+
+# Compare with KC-approx and FG
+
+
+ggplot(data = subset(dta.stat, wc == "Independent" & dfname == "cmp"), aes(x = relsetrunc, fill = ICC)) + 
+  geom_vline(xintercept = 0, linetype = "longdash", color = "grey80", size = 0.5) +
+  geom_vline(xintercept = -10, linetype = "longdash", color = "grey80", size = 0.5) +
+  geom_vline(xintercept = 10, linetype = "longdash", color = "grey80", size = 0.5) +
+  geom_histogram(bins = 35) + 
+  facet_grid(Clusters ~ sa) +
+  scale_y_continuous(breaks = function(x) c(0,floor(x[2]))) +
+  xlab("Standard error relative error (%)") +
+  theme
+
+ggplot(data = subset(dta.stat, wc == "Exchangeable" & dfname == "cmp"), aes(x = relsetrunc, fill = ICC)) + 
+  geom_vline(xintercept = 0, linetype = "longdash", color = "grey80", size = 0.5) +
+  geom_vline(xintercept = -10, linetype = "longdash", color = "grey80", size = 0.5) +
+  geom_vline(xintercept = 10, linetype = "longdash", color = "grey80", size = 0.5) +
+  geom_histogram(bins = 35) + 
+  facet_grid(Clusters ~  sa) +
+  scale_y_continuous(breaks = function(x) c(0,floor(x[2]))) +
+  xlab("Standard error relative error (%)") +
+  theme
+
+
+ggplot(data = subset(dta.stat,  dfname == "cmp"), aes(x = relsetrunc, fill = ICC)) + 
+  geom_vline(xintercept = 0, linetype = "longdash", color = "grey80", size = 0.5) +
+  geom_vline(xintercept = -10, linetype = "longdash", color = "grey80", size = 0.5) +
+  geom_vline(xintercept = 10, linetype = "longdash", color = "grey80", size = 0.5) +
+  geom_histogram(bins = 35) + 
+  facet_grid(Correlation_structure ~ wc + sa) +
+  scale_y_continuous(breaks = function(x) c(0,floor(x[2]))) +
+  xlab("Standard error relative error (%)") +
+  theme
+
+
+ggplot(data = subset(dta.stat,  dfname == "cmp"), aes(x = relsetrunc, fill = Varying_cluster_size)) + 
+  geom_vline(xintercept = 0, linetype = "longdash", color = "grey80", size = 0.5) +
+  geom_vline(xintercept = -10, linetype = "longdash", color = "grey80", size = 0.5) +
+  geom_vline(xintercept = 10, linetype = "longdash", color = "grey80", size = 0.5) +
+  geom_histogram(bins = 35) + 
+  facet_grid(Correlation_structure ~ wc + sa) +
+  scale_y_continuous(breaks = function(x) c(0,floor(x[2]))) +
+  xlab("Standard error relative error (%)") +
+  theme
+
+
+
+ggplot(data = subset(dta.stat,  dfname == "cmp"), aes(x = relsetrunc, fill = Sequences)) + 
+  geom_vline(xintercept = 0, linetype = "longdash", color = "grey80", size = 0.5) +
+  geom_vline(xintercept = -10, linetype = "longdash", color = "grey80", size = 0.5) +
+  geom_vline(xintercept = 10, linetype = "longdash", color = "grey80", size = 0.5) +
+  geom_histogram(bins = 35) + 
+  facet_grid(Correlation_structure ~ wc + sa) +
+  scale_y_continuous(breaks = function(x) c(0,floor(x[2]))) +
+  xlab("Standard error relative error (%)") +
+  theme
+
+```
+
+
+```{r se}
+
+
+
+
+aggregate(relse ~ wc , 
+          data = subset(dta.stat, sa == "kcapprox" & dfname == "cmp"), 
+          FUN = function(x) round(c(n = sum(!is.na(x)),
+                                    n10 = sum(abs(x) > 10) ,
+                                    p10 = 100 * sum(abs(x) > 10) / sum(!is.na(x)), 
+                                    n8 = sum(abs(x) > 8) ,
+                                    p8 = 100 * sum(abs(x) > 8) / sum(!is.na(x)), 
+                                    n6 = sum(abs(x) > 6) ,
+                                    p6 = 100 * sum(abs(x) > 6) / sum(!is.na(x))), 3))
+
+
+aggregate(relse ~ corrscenario, 
+          data = subset(dta.stat, wc == "Exchangeable" & sa == "kcapprox" & dfname == "cmp"), 
+          FUN = function(x) round(c(n = sum(!is.na(x)),
+                                    n10 = sum(abs(x) > 10) ,
+                                    p10 = 100 * sum(abs(x) > 10) / sum(!is.na(x))), 3))
+
+
+aggregate(relse ~ corrscenario + icc , 
+          data = subset(dta.stat, wc == "Exchangeable" & sa == "kcapprox" & dfname == "cmp"), 
+          FUN = function(x) round(c(n = sum(!is.na(x)),
+                                    n10 = sum(abs(x) > 10) ,
+                                    p10 = 100 * sum(abs(x) > 10) / sum(!is.na(x))), 3))
+
+
+setNames(aggregate(relse ~ Clusters + wc , 
+                   data = subset(dta.stat, sa == "kcapprox" & dfname == "cmp"), 
+                   FUN = function(x) round(summary(x), 3)), rep("",2))
+
+setNames(aggregate(relse ~ Mean_cluster_size, 
+                   data = subset(dta.stat, wc == "Exchangeable" & Correlation_structure == "Exchangeable" & sa == "kcapprox" & dfname == "cmp"), 
+                   FUN = function(x) round(summary(x), 3)), rep("",2))
+
+# Comparing variability of SEs between scenarios
+setNames(aggregate(relse ~ sa+ Clusters, 
+                   data = subset(dta.stat, wc == "Independent" & dfname == "cmp"), 
+                   FUN = function(x) round(sd(x), 3)), rep("",2))
+
+
+setNames(aggregate(relse ~ sa + Clusters, 
+                   data = subset(dta.stat, wc == "Exchangeable" & dfname == "cmp"), 
+                   FUN = function(x) round(sd(x), 3)), rep("",2))
+
+# Comparing variability of SEs within scenarios
+setNames(aggregate(mbsevar ~ sa + Clusters, 
+                   data = subset(dta.stat, wc == "Independent" & dfname == "cmp"), 
+                   FUN = function(x) round(mean(x), 3)), rep("",2))
+
+
+setNames(aggregate(relse ~ sa + Clusters, 
+                   data = subset(dta.stat, wc == "Exchangeable" & dfname == "cmp"), 
+                   FUN = function(x) round(sd(x), 3)), rep("",2))
+
+
+```
+
+### Coverage
+
+``` {r coverage}
+
+
+## coverage plot
+
+ggplot(data = subset(dtakc.stat,  clusters %in% c(6,12,18,24,54)), aes(x = coverage)) + 
+  geom_histogram(bins = 25) + 
+  facet_grid(clusters ~ dfname + wc) +
+  geom_vline(xintercept = 95, linetype = "longdash", color = "grey80", size = 0.5) + 
+  geom_vline(xintercept = 93.6, linetype = "longdash", color = "grey80", size = 0.5) + 
+  geom_vline(xintercept = 96.4, linetype = "longdash", color = "grey80", size = 0.5) +
+  xlab("95% confidence interval coverage") +
+  scale_y_continuous(breaks = function(x) c(0,floor(x[2]))) +
+  theme
+
+ggplot(data = subset(dtakc.stat,  clusters %in% c(6,12,18,24,54)), aes(x = coverage, fill = ICC)) + 
+  geom_histogram(bins = 25) + 
+  facet_grid(clusters ~ dfname + wc) +
+  geom_vline(xintercept = 95, linetype = "longdash", color = "grey80", size = 0.5) + 
+  geom_vline(xintercept = 93.6, linetype = "longdash", color = "grey80", size = 0.5) + 
+  geom_vline(xintercept = 96.4, linetype = "longdash", color = "grey80", size = 0.5) +
+  xlab("95% confidence interval coverage") +
+  scale_y_continuous(breaks = function(x) c(0,floor(x[2]))) +
+  theme
+
+ggplot(data = subset(dtakc.stat,  clusters %in% c(6,12,18,24,54)), aes(x = coverage, fill = Correlation_structure)) + 
+  geom_histogram(bins = 25) + 
+  facet_grid(clusters ~ dfname + wc) +
+  geom_vline(xintercept = 95, linetype = "longdash", color = "grey80", size = 0.5) + 
+  geom_vline(xintercept = 93.6, linetype = "longdash", color = "grey80", size = 0.5) + 
+  geom_vline(xintercept = 96.4, linetype = "longdash", color = "grey80", size = 0.5) +
+  xlab("95% confidence interval coverage") +
+  scale_y_continuous(breaks = function(x) c(0,floor(x[2]))) +
+  theme
+
+
+aggregate(coverage ~ wc + dfname, 
+                   data = subset(dta.stat, sa == "kcapprox"), 
+          FUN = function(x) round(c(n = sum(!is.na(x)), 
+                                    overc = sum(x > 96.4),
+                                    p_overc = 100 * sum(x > 96.4) / sum(!is.na(x)), 
+                                    underc = sum(x < 93.6), 
+                                    p_underc = 100 * sum(x < 93.6) / sum(!is.na(x))),2))
+
+aggregate(coverage ~ Clusters + dfname, 
+                   data = subset(dta.stat, sa == "kcapprox" & wc == "Independent"), 
+          FUN = function(x) round(c(n = sum(!is.na(x)), 
+                                    overc = sum(x > 96.4),
+                                    p_overc = 100 * sum(x > 96.4) / sum(!is.na(x)), 
+                                    underc = sum(x < 93.6), 
+                                    p_underc = 100 * sum(x < 93.6) / sum(!is.na(x))),2))
+
+
+aggregate(coverage ~ Clusters + dfname, 
+                   data = subset(dta.stat, sa == "kcapprox" & wc == "Exchangeable"), 
+          FUN = function(x) round(c(n = sum(!is.na(x)), 
+                                    overc = sum(x > 96.4),
+                                    p_overc = 100 * sum(x > 96.4) / sum(!is.na(x)), 
+                                    underc = sum(x < 93.6), 
+                                    p_underc = 100 * sum(x < 93.6) / sum(!is.na(x))),2))
+
+aggregate(coverage ~ Correlation_structure + dfname, 
+                   data = subset(dtakc.stat,  wc == "Exchangeable"), 
+          FUN = function(x) round(c(n = sum(!is.na(x)), 
+                                    overc = sum(x > 96.4),
+                                    p_overc = 100 * sum(x > 96.4) / sum(!is.na(x)), 
+                                    underc = sum(x < 93.6), 
+                                    p_underc = 100 * sum(x < 93.6) / sum(!is.na(x))),2))
+
+aggregate(coverage ~ Clusters + wc + dfname, 
+                   data = subset(dta.stat, sa == "kcapprox"), 
+          FUN = function(x) round(mean(x),2))
+
+
+ggplot(data = subset(dta.stat,  clusters %in% c(6,12,18,24,54)), aes(x = coverage)) + 
+  geom_histogram(bins = 25) + 
+  facet_grid(DF + clusters ~ wc + SA) +
+  geom_vline(xintercept = 95, linetype = "longdash", color = "grey80", size = 0.5) + 
+  geom_vline(xintercept = 93.6, linetype = "longdash", color = "grey80", size = 0.5) + 
+  geom_vline(xintercept = 96.4, linetype = "longdash", color = "grey80", size = 0.5) +
+  xlab("95% confidence interval coverage") +
+  scale_y_continuous(breaks = function(x) c(0,floor(x[2]))) +
+  theme
+
+ggsave("./output/kcapprox_coverage.pdf", width = 16, height = 12, units = "cm")
+
+levels(dta.stat$Correlation_structure)[levels(dta.stat$Correlation_structure) == "Reduced intervention"] <-  "Reduced \n intervention"
+
+
+
+ggplot(data = subset(dta.stat, sa == "kcapprox"), aes(x = coverage)) + 
+  geom_histogram(bins = 25) + 
+  facet_grid(Correlation_structure ~ DF  + wc) +
+  geom_vline(xintercept = 95, linetype = "longdash", color = "grey80", size = 0.5) + 
+  geom_vline(xintercept = 93.6, linetype = "longdash", color = "grey80", size = 0.5) + 
+  geom_vline(xintercept = 96.4, linetype = "longdash", color = "grey80", size = 0.5) +
+  xlab("95% confidence interval coverage") +
+  scale_y_continuous(breaks = function(x) c(0,floor(x[2]))) +
+  theme
+
+ggsave("./output/kcapprox_coverage_cs.pdf", width = 16, height = 12, units = "cm")
+
+```
+
+### Power
+
+```{r powerwc}
+
+
+dta2.stat.wide <- reshape(direction = "wide",
+                          data = dta.stat[dta.stat$sa %in% c("kcapprox", "kc", "fg"), 
+                                           c("scenario", "Clusters", "ICC", "Correlation_structure", "Sequences", "Mean_cluster_size", "Varying_cluster_size", "wc", "power", "sa", "dfname")],
+                          idvar =  c("scenario", "Clusters", "ICC", "Correlation_structure", "Sequences", "Mean_cluster_size", "Varying_cluster_size","sa", "dfname"),
+                          v.names = "power",
+                          timevar = "wc")
+
+# Calculate differences
+
+dta2.stat.wide$av <- ((dta2.stat.wide$power.Exchangeable ) + ( dta2.stat.wide$power.Independent )) /2 
+dta2.stat.wide$diff <- ((dta2.stat.wide$power.Exchangeable ) - ( dta2.stat.wide$power.Independent )) 
+dta2.stat.wide$reldiff <- ((dta2.stat.wide$power.Exchangeable + 1) / ( dta2.stat.wide$power.Independent + 1)) 
+dta2.stat.wide$logreldiff <- log(dta2.stat.wide$reldiff)
+
+# Plot EWM - IWM against average
+
+sumdiff <- aggregate(diff ~ sa, data = dta2.stat.wide, FUN = function(x) c(mean(x), sd(x)))
+sumdiff$mean <- sumdiff$diff[,1]
+sumdiff$sd <- sumdiff$diff[,2]
+sumdiff$upper <- sumdiff$mean + 1.96 * sumdiff$sd
+sumdiff$lower <- sumdiff$mean - 1.96 * sumdiff$sd
+
+ggplot(data = dta2.stat.wide, aes(x = av, y = diff, color = Mean_cluster_size)) + 
+  facet_grid(sa ~ dfname) +
+  geom_hline(yintercept = 0) +
+  geom_hline(data = sumdiff, aes(yintercept = mean), linetype = "longdash", color = "grey80") +
+  geom_hline(data = sumdiff, aes(yintercept = upper), linetype = "longdash", color = "grey80") +
+  geom_hline(data = sumdiff, aes(yintercept = lower), linetype = "longdash", color = "grey80") +
+  geom_point() +
+  theme
+
+# Plot EWM / IWM against average
+
+sumreldiff <- aggregate(logreldiff ~ sa + dfname, data = dta2.stat.wide, FUN = function(x) c(mean(x), sd(x)))
+
+sumreldiff$mean <- sumreldiff$logreldiff[,1]
+sumreldiff$sd <- sumreldiff$logreldiff[,2]
+sumreldiff$emean <- exp(sumreldiff$mean)
+sumreldiff$upper <- exp(sumreldiff$mean + 1.96 * sumreldiff$sd)
+sumreldiff$lower <- exp(sumreldiff$mean - 1.96 * sumreldiff$sd)
+
+ggplot(data = dta2.stat.wide, aes(x = av, y = reldiff, color = Mean_cluster_size)) + 
+  facet_grid(sa ~ dfname) +
+  geom_hline(yintercept = 1) +
+  geom_hline(data = sumreldiff, aes(yintercept = emean), linetype = "longdash", color = "grey80") +
+  geom_hline(data = sumreldiff, aes(yintercept = upper), linetype = "longdash", color = "grey80") +
+  geom_hline(data = sumreldiff, aes(yintercept = lower), linetype = "longdash", color = "grey80") +
+  geom_point() +
+  scale_y_continuous(trans='log2') +
+  theme
+
+
+mdl <- lm(diff ~ Clusters + Sequences + Correlation_structure + ICC + Mean_cluster_size + Varying_cluster_size + dfname,
+   data = subset(dta2.stat.wide, sa == "kcapprox"), na.action = na.exclude )
+
+coef(summary(mdl))
+anova(mdl)
+
+ggeffect(mdl, given.values = "equal")
+
+```
+
+
+
+```{r models}
+
+fn.results <- function(mdl, pvalues) {
+  
+  tbl <- as.data.frame(coef(summary(mdl)))
+  
+  # Create statistics to show in table
+  
+  tbl$lb <- tbl$Estimate - 1.96 * tbl$`Std. Error`
+  tbl$ub <- tbl$Estimate + 1.96 * tbl$`Std. Error`
+  
+  
+  tbl$Effect <- paste0(round(tbl$Estimate, 1), " (", round(tbl$lb, 1), ", ", round(tbl$ub, 1), ")")
+  
+  # Add intercept p-value to p-values table
+  pvalues[pvalues$var == "(Intercept)","p"] <- tbl["(Intercept)",4]
+  
+  pvalues$`P value` <- ifelse(pvalues$p >= 0.01, 
+                              as.character(round(pvalues$p, 2)),
+                              ifelse(pvalues$p < 0.01 & pvalues$p >= 0.001, 
+                                     as.character(round(pvalues$p, 3)),
+                                     "<0.001"))
+  
+  # Create variable columns
+  
+  rows <- data.frame(Characteristic = unlist(mdl$xlevels), 
+                     var = rep(names(mdl$xlevels), times = sapply(mdl$xlevels, length)), 
+                     order = unlist(lapply(sapply(mdl$xlevels, length), function(x) 1:x)),
+                     stringsAsFactors = FALSE)
+  
+  rows <- rbind(rows,
+                cbind(Characteristic = names(mdl$xlevels),
+                      var = names(mdl$xlevels),
+                      order = 0),
+                c("", "(Intercept)", 0))
+  
+  rows <- rows[order(rows[,2], rows[,3]),]
+  
+  # Merge statistics and variables
+  
+  rows$mergevar <- paste0(rows$var, rows$Characteristic)
+  
+  tbl$mergevar <- rownames(tbl)
+  
+  tbl <- merge(tbl, rows, by = "mergevar", sort = FALSE, all = TRUE)
+  
+  # Merge in p values
+  
+  pvalues$order <- 0
+  
+  tbl <- merge(
+    tbl, 
+    pvalues, 
+    by= c("var", "order"),
+    all = TRUE)
+  
+  tbl$Effect <- ifelse(tbl$order == 1 & is.na(tbl$Effect), "0", tbl$Effect)
+  
+  tbl$Characteristic <- gsub("_", " ", tbl$Characteristic)
+  
+  tbl[tbl$mergevar == "(Intercept)", "Characteristic"] <- "Intercept"
+  
+  tbl[tbl$mergevar == "(Intercept)", "var"] <- "A"
+  
+  
+  tbl[order(tbl$var, tbl$order),c("mergevar", "Characteristic", "Effect", "P value")]
+}
+
+
+
+phase2var <- c("Clusters", "Correlation_structure", "ICC", "Sequences", "Mean_cluster_size", "Varying_cluster_size")
+wc <- c("Independent", "Exchangeable")
+
+i <- "kcapprox"
+
+dta.stat <- dta.stat[dta.stat$sa == i, ]
+
+
+###############################
+
+# Error in standard errors
+
+  for(j in wc){
+    mdta <- subset(dtakc.stat, wc == j)
+    
+    mdl <- lm(
+      as.formula(paste("relse ~ ", paste(phase2var, collapse="+"))), 
+      data = mdta
+    )
+    
+    mdl.p <-  data.frame(
+      var = c("(Intercept)", phase2var),
+      p = rep(NA, 1 + length(phase2var))
+    ) 
+    
+    for(l in phase2var){
+      
+      mdl2 <- lm(
+        as.formula(paste("relse ~ ", paste(phase2var[phase2var != l], collapse="+"))),
+        data = mdta
+      )
+      
+      mdl.p[mdl.p$var == l,"p"] <- anova(
+        mdl2, 
+        mdl, 
+        test = "LRT"
+      )[2,5]
+      
+    }
+    
+    assign(paste0("mdl.", i,".",j), 
+           mdl)
+    
+    assign(paste0("p.", i,".",j), 
+           mdl.p)
+    
+  }
+
+
+
+  t1 <- fn.results(get(paste0("mdl.", i, ".Independent")), 
+                   get(paste0("p.", i, ".Independent")))
+  t2 <- fn.results(get(paste0("mdl.", i, ".Exchangeable")),
+                   get(paste0("p.", i, ".Exchangeable")))
+  
+  temp <- merge(t1, 
+                t2, 
+                by = c("mergevar", "Characteristic"),
+                sort = FALSE)
+  
+  temp$mergevar <- NULL
+  
+  
+  print(knitr::kable(temp, col.names = c("Characteristics", 
+                                         "Effect", 
+                                         "P value", 
+                                         "Effect",
+                                         "P value"),
+                     booktabs = TRUE) %>%
+          kable_styling(latex_options = "hold_position") %>%
+          add_header_above(c(" " = 1, "Independent" = 2, "Exchangeable" = 2)))
+
+
+#######################
+  
+# Coverage
+  
+  for(j in wc){
+    mdta <- subset(dtakc.stat, wc == j & dfname == "fgd5")
+    
+    mdl <- lm(
+      as.formula(paste("coverage ~ ", paste(phase2var, collapse="+"))), 
+      data = mdta
+    )
+    
+    mdl.p <-  data.frame(
+      var = c("(Intercept)", phase2var),
+      p = rep(NA, 1 + length(phase2var))
+    ) 
+    
+    for(l in phase2var){
+      
+      mdl2 <- lm(
+        as.formula(paste("coverage ~ ", paste(phase2var[phase2var != l], collapse="+"))),
+        data = mdta
+      )
+      
+      mdl.p[mdl.p$var == l,"p"] <- anova(
+        mdl2, 
+        mdl, 
+        test = "LRT"
+      )[2,5]
+      
+    }
+    
+    assign(paste0("mdl.", i,".",j), 
+           mdl)
+    
+    assign(paste0("p.", i,".",j), 
+           mdl.p)
+    
+  }
+
+
+
+  t1 <- fn.results(get(paste0("mdl.", i, ".Independent")), 
+                   get(paste0("p.", i, ".Independent")))
+  t2 <- fn.results(get(paste0("mdl.", i, ".Exchangeable")),
+                   get(paste0("p.", i, ".Exchangeable")))
+  
+  temp <- merge(t1, 
+                t2, 
+                by = c("mergevar", "Characteristic"),
+                sort = FALSE)
+  
+  temp$mergevar <- NULL
+  
+  cat(paste0("Standard error correction: ", i))
+  
+  print(knitr::kable(temp, col.names = c("Characteristics", 
+                                         "Effect", 
+                                         "P value", 
+                                         "Effect",
+                                         "P value"),
+                     booktabs = TRUE) %>%
+          kable_styling(latex_options = "hold_position") %>%
+          add_header_above(c(" " = 1, "Independent" = 2, "Exchangeable" = 2)))
+
+
+```
+ 
+ 

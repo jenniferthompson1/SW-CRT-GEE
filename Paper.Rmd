@@ -1,0 +1,1015 @@
+---
+title: "Main paper Results"
+output: pdf_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r gph_parameters_and_packages, include=FALSE}
+
+library("ggplot2")
+library("knitr")
+library("ggeffects")
+
+theme <-   theme(text = element_text(size = 10),
+                 panel.background = element_rect(fill = "white"),
+                 plot.margin = unit(c(0.1,0.1,0.1,0), "cm"),
+                 axis.line = element_line(size = 0.5),
+                 axis.line.x = element_line(color="black"),
+                 axis.line.y = element_line(color="black"),
+                 legend.key = element_blank(),
+                 legend.key.size = unit(0.3,"cm"),
+                 legend.position = "bottom",
+                 legend.background = element_rect(colour = "black"),
+                 strip.background = element_rect(fill = "grey95"))
+
+```
+
+```{r load_data, include=FALSE}
+
+
+load("./crstatistics_phase_1.RData")
+dta1.stat <- dta.stat
+
+
+
+load("./crstatistics_phase_2.RData")
+dta2.stat <- dta.stat
+rm(dta.stat)
+
+dta2.stat$relsetrunc <- ifelse(dta2.stat$relse>30, 30,dta2.stat$relse)
+
+
+
+```
+
+
+## Phase 1
+
+### Summarise scenarios
+
+```{r scenarios1}
+print("Number of scenarios:")
+
+ length(unique(dta1.stat$scenario))
+ 
+print("ICC:")
+
+ kable(table(dta1.stat$ICC))
+
+print("Correlation structure:")
+
+ kable(table(dta1.stat$Correlation_structure))
+ 
+print("Sequences:")
+
+ kable(table(dta1.stat$Sequences))
+ 
+print("Clusters:")
+
+ kable(table(dta1.stat$clusters))
+
+print("Cluster size:")
+
+ kable(table(dta1.stat$Mean_cluster_size))
+
+ kable(table(dta1.stat$Varying_cluster_size))
+ 
+
+```
+
+### Convergence
+
+
+
+```{r convergence}
+summary(dta1.stat$convergep)
+```
+
+
+### Bias
+
+```{r bias_histograms}
+ggplot(data = subset(dta1.stat, mdl %in% c("fg.cmp")), aes(x = stdbias)) + 
+  facet_wrap( ~ wc) +
+  geom_vline(xintercept = 0, linetype = "longdash", color = "grey80", size = 1)+
+  geom_vline(xintercept = -10, linetype = "longdash", color = "grey80", size = 1)+
+  geom_vline(xintercept = 10, linetype = "longdash", color = "grey80", size = 1) +
+  geom_histogram(bins = 15) + 
+  xlab("Intervention effect estimate standardised bias") +
+  scale_y_continuous(breaks = 2 * 0:6) +
+  theme
+
+ggsave("./output/phase1_rxbias.pdf", width = 16, height = 12, units = "cm")
+```
+
+
+```{r bias_numbers}
+round(summary(dta1.stat$stdbias), 3)
+
+round(summary(dta1.stat$pbias), 3)
+```
+
+
+### Standard errors
+```{r se_histograms}
+
+ggplot(data = subset(dta1.stat, dfname == "cmp"), aes(x = relse)) + 
+  geom_vline(xintercept = 0, linetype = "longdash", color = "grey80", size = 0.5) +
+  geom_vline(xintercept = -10, linetype = "longdash", color = "grey80", size = 0.5) +
+  geom_vline(xintercept = 10, linetype = "longdash", color = "grey80", size = 0.5) +
+  geom_histogram(bins = 35) + 
+  facet_grid(SA ~ wc) +
+  scale_y_continuous(breaks = function(x) c(0,floor(x[2]))) +
+  xlab("Standard error relative error (%)") +
+  theme
+
+ggsave("./output/phase1_se.emf", width = 16, height = 12, units = "cm")
+ggsave("./output/phase1_se.eps", width = 16, height = 12, units = "cm")
+
+
+
+ggplot(data = subset(dta1.stat, dfname == "cmp"), aes(x = relse, fill = Correlation_structure)) + 
+  geom_vline(xintercept = 0, linetype = "longdash", color = "grey80", size = 0.5) +
+  geom_vline(xintercept = -10, linetype = "longdash", color = "grey80", size = 0.5) +
+  geom_vline(xintercept = 10, linetype = "longdash", color = "grey80", size = 0.5) +
+  geom_histogram(bins = 35) + 
+  facet_grid(SA ~ wc) +
+  scale_y_continuous(breaks = function(x) c(0,floor(x[2]))) +
+  xlab("Standard error relative error (%)") +
+  theme
+
+ggsave("./output/phase1_se_Corr_str.pdf", width = 16, height = 12, units = "cm")
+
+ggplot(data = subset(dta1.stat, dfname == "cmp"), aes(x = relse, fill = ICC)) + 
+  geom_vline(xintercept = 0, linetype = "longdash", color = "grey80", size = 0.5) +
+  geom_vline(xintercept = -10, linetype = "longdash", color = "grey80", size = 0.5) +
+  geom_vline(xintercept = 10, linetype = "longdash", color = "grey80", size = 0.5) +
+  geom_histogram(bins = 35) + 
+  facet_grid(SA ~ wc) +
+  scale_y_continuous(breaks = function(x) c(0,floor(x[2]))) +
+  xlab("Standard error relative error (%)") +
+  theme
+
+ggsave("./output/phase1_se_ICC.pdf", width = 16, height = 12, units = "cm")
+
+
+ggplot(data = subset(dta1.stat, dfname == "cmp"), aes(x = relse, fill = Varying_cluster_size)) + 
+  geom_vline(xintercept = 0, linetype = "longdash", color = "grey80", size = 0.5) +
+  geom_vline(xintercept = -10, linetype = "longdash", color = "grey80", size = 0.5) +
+  geom_vline(xintercept = 10, linetype = "longdash", color = "grey80", size = 0.5) +
+  geom_histogram(bins = 35) + 
+  facet_grid(SA ~ wc) +
+  scale_y_continuous(breaks = function(x) c(0,floor(x[2]))) +
+  xlab("Standard error relative error (%)") +
+  theme
+
+ggsave("./output/phase1_se_Varying_cluster_size.pdf", width = 16, height = 12, units = "cm")
+
+
+ggplot(data = subset(dta1.stat, dfname == "cmp"), aes(x = relse, fill = Sequences)) + 
+  geom_vline(xintercept = 0, linetype = "longdash", color = "grey80", size = 0.5) +
+  geom_vline(xintercept = -10, linetype = "longdash", color = "grey80", size = 0.5) +
+  geom_vline(xintercept = 10, linetype = "longdash", color = "grey80", size = 0.5) +
+  geom_histogram(bins = 35) + 
+  facet_grid(SA ~ wc) +
+  scale_y_continuous(breaks = function(x) c(0,floor(x[2]))) +
+  xlab("Standard error relative error (%)") +
+  theme
+
+ggsave("./output/phase1_se_Sequences.pdf", width = 16, height = 12, units = "cm")
+```
+
+
+```{r se_numbers}
+
+setNames(aggregate(relse ~ sa , 
+                   data = subset(dta1.stat, dfname=="cmp"), 
+                   FUN = function(x) round(summary(x), 3)), rep("",2))
+
+
+aggregate(relse ~ sa , 
+          data = subset(dta1.stat, dfname=="cmp"), 
+          FUN = function(x) round(c(n = sum(!is.na(x)),
+                                    n10 = sum(abs(x) > 10) ,
+                                    p10 = 100 * sum(abs(x) > 10) / sum(!is.na(x)), 
+                                    n8 = sum(abs(x) > 8) ,
+                                    p8 = 100 * sum(abs(x) > 8) / sum(!is.na(x)), 
+                                    n6 = sum(abs(x) > 6) ,
+                                    p6 = 100 * sum(abs(x) > 6) / sum(!is.na(x))), 3))
+
+aggregate(relse ~ wc + sa , 
+          data = subset(dta1.stat, dfname=="cmp"), 
+          FUN = function(x) round(c(n = sum(!is.na(x)),
+                                    n10 = sum(abs(x) > 10) ,
+                                    p10 = 100 * sum(abs(x) > 10) / sum(!is.na(x)), 
+                                    n6 = sum(abs(x) > 6) ,
+                                    p6 = 100 * sum(abs(x) > 6) / sum(!is.na(x))), 3))
+```
+
+#### KC:
+
+```{r se_kc}
+
+aggregate(relse ~ corrscenario + icc , 
+          data = subset(dta1.stat, dfname=="cmp" & sa == "kc" & wc == "Exchangeable"), 
+          FUN = function(x) round(c(n = sum(!is.na(x)),
+                                    n10 = sum(abs(x) > 10) ,
+                                    p10 = 100 * sum(abs(x) > 10) / sum(!is.na(x))), 3))
+
+```
+
+#### FG:
+
+```{r se_fg}
+setNames(aggregate(relse ~ wc +icc , 
+                   data = subset(dta1.stat, dfname=="cmp" & sa == "fg"), 
+                   FUN = function(x) round(summary(x), 3)), rep("",3))
+
+```
+
+#### MD:
+
+```{r se_md}
+setNames(aggregate(relse ~ icc , 
+                   data = subset(dta1.stat, dfname=="cmp" & sa == "md"), 
+                   FUN = function(x) round(summary(x), 3)), rep("",2))
+
+setNames(aggregate(relse ~ Varying_cluster_size , 
+                   data = subset(dta1.stat, dfname=="cmp" & sa == "md"), 
+                   FUN = function(x) round(summary(x), 3)), rep("",2))
+
+```
+
+#### MBN:
+
+```{r se_mbn}
+setNames(aggregate(relse ~ sequences , 
+                   data = subset(dta1.stat, dfname=="cmp" & sa == "mbn"), 
+                   FUN = function(x) round(summary(x), 3)), rep("",2))
+
+aggregate(relse ~ sequences , 
+          data = subset(dta1.stat, dfname=="cmp" & sa == "mbn"), 
+          FUN = function(x) round(c(n = sum(!is.na(x)),
+                                    n10 = sum(abs(x) > 10) ,
+                                    p10 = 100 * sum(abs(x) > 10) / sum(!is.na(x)), 
+                                    n6 = sum(abs(x) > 6) ,
+                                    p6 = 100 * sum(abs(x) > 6) / sum(!is.na(x))), 3))
+
+aggregate(relse ~ Varying_cluster_size , 
+          data = subset(dta1.stat, dfname=="cmp" & sa == "mbn"), 
+          FUN = function(x) round(c(n = sum(!is.na(x)),
+                                    n10 = sum(abs(x) > 10) ,
+                                    p10 = 100 * sum(abs(x) > 10) / sum(!is.na(x)), 
+                                    n6 = sum(abs(x) > 6) ,
+                                    p6 = 100 * sum(abs(x) > 6) / sum(!is.na(x)),
+                                    mean = mean(x)), 3))
+
+```
+
+#### MW:
+
+```{r se_mw}
+setNames(aggregate(relse ~ sequences , 
+                   data = subset(dta1.stat, dfname=="cmp" & sa == "mw"), 
+                   FUN = function(x) round(summary(x), 3)), rep("",2))
+
+aggregate(relse ~ sequences , 
+          data = subset(dta1.stat, dfname=="cmp" & sa == "mw"), 
+          FUN = function(x) round(c(n = sum(!is.na(x)),
+                                    n10 = sum(abs(x) > 10) ,
+                                    p10 = 100 * sum(abs(x) > 10) / sum(!is.na(x)), 
+                                    n6 = sum(abs(x) > 6) ,
+                                    p6 = 100 * sum(abs(x) > 6) / sum(!is.na(x))), 3))
+
+
+aggregate(relse ~ sequences + Varying_cluster_size , 
+          data = subset(dta1.stat, dfname=="cmp" & sa == "mw"), 
+          FUN = function(x) round(c(n = sum(!is.na(x)),
+                                    n10 = sum(abs(x) > 10) ,
+                                    p10 = 100 * sum(abs(x) > 10) / sum(!is.na(x)), 
+                                    n6 = sum(abs(x) > 6) ,
+                                    p6 = 100 * sum(abs(x) > 6) / sum(!is.na(x)),
+                                    mean = mean(x)), 3))
+```
+
+### Degrees of freedom
+
+```{r df}
+setNames(aggregate(meandf ~ dfname + sa, 
+                   data = subset(dta1.stat, sa %in% c("lz","fg","kc")), 
+                   FUN = function(x) round(c(mean = mean(x), 
+                                             sd = sd(x)), 3)), rep("",2))
+
+setNames(aggregate(vardf ~ dfname + sa, 
+                   data = subset(dta1.stat, sa %in% c("lz","fg","kc")), 
+                   FUN = function(x) round(c(mean = mean(x), 
+                                             sd = sd(x)), 3)), rep("",2))
+
+setNames(aggregate(meandf ~ dfname + sa + sequences, 
+                   data = subset(dta1.stat, sa %in% c("lz","fg","kc")), 
+                   FUN = function(x) round(c(mean = mean(x), 
+                                             sd = sd(x)), 3)), rep("",2))
+
+setNames(aggregate(vardf ~ dfname + sa  + sequences, 
+                   data = subset(dta1.stat, sa %in% c("lz","fg","kc")), 
+                   FUN = function(x) round(c(mean = mean(x), 
+                                             sd = sd(x)), 3)), rep("",2))
+
+setNames(aggregate(meandf ~ dfname + sequences, 
+                   data = subset(dta1.stat, sa == "fg" & Working_correlation == "Independent" ), 
+                   FUN = function(x) round(c(mean = mean(x), 
+                                             sd = sd(x)), 3)), rep("",2))
+
+setNames(aggregate(vardf ~ dfname  + sequences, 
+                   data = subset(dta1.stat, sa == "fg" & Working_correlation == "Independent"), 
+                   FUN = function(x) round(c(mean = sqrt(mean(x)), 
+                                             sd = sd(x)), 3)), rep("",2))
+
+setNames(aggregate(vardf ~ dfname , 
+                   data = subset(dta1.stat, sa == "fg" & Working_correlation == "Independent"), 
+                   FUN = function(x) round(c(mean = sqrt(mean(x)), 
+                                             sd = sd(x)), 3)), rep("",2))
+```
+
+### Coverage
+
+```{r cov_histogram}
+
+
+ggplot(data = subset(dta1.stat, sa %in% c("fg", "kc")), aes(x = coverage)) + 
+  geom_vline(xintercept = 95, linetype = "longdash", color = "grey80", size = 0.5) +
+  geom_vline(xintercept = 93.6, linetype = "longdash", color = "grey80", size = 0.5) +
+  geom_vline(xintercept = 96.4, linetype = "longdash", color = "grey80", size = 0.5) +
+  geom_histogram(bins = 20) + 
+  facet_grid(DF ~ wc + SA) +
+  xlab("95% confidence interval coverage") +
+  scale_y_continuous(breaks = function(x) c(0,floor(x[2]))) +
+  scale_x_continuous(labels = function(x) format(x,digits = 1,scientific = FALSE)) +
+  theme
+
+ggsave("./output/phase1_coverage.emf", width = 16, height = 12, units = "cm")
+ggsave("./output/phase1_coverage.eps", width = 16, height = 12, units = "cm")
+
+
+ggplot(data = subset(dta1.stat, sa %in% c("fg", "kc")), aes(x = coverage, fill = icc)) + 
+  geom_vline(xintercept = 95, linetype = "longdash", color = "grey80", size = 0.5) +
+  geom_vline(xintercept = 93.6, linetype = "longdash", color = "grey80", size = 0.5) +
+  geom_vline(xintercept = 96.4, linetype = "longdash", color = "grey80", size = 0.5) +
+  geom_histogram(bins = 20) + 
+  facet_grid(DF ~ wc + SA) +
+  xlab("95% confidence interval coverage") +
+  scale_y_continuous(breaks = function(x) c(0,floor(x[2]))) +
+  scale_x_continuous(labels = function(x) format(x,digits = 1,scientific = FALSE)) +
+  theme
+
+aggregate(coverage ~ wc + dfname + icc, 
+          data = subset(dta1.stat, sa == "fg"), 
+          FUN = function(x) mean = round(c(mean(x),
+                                            p_over = 100 * sum(x > 96.4) / sum(!is.na(x)), 
+                                           p_und = 100 * sum(x < 93.6) / sum(!is.na(x))),2))
+
+```
+
+
+## Phase 2
+
+```{r scenarios2}
+print("Number of scenarios:")
+
+ length(unique(dta2.stat$scenario))
+ 
+print("ICC:")
+
+ kable(table(dta2.stat$ICC))
+
+print("Correlation structure:")
+
+ kable(table(dta2.stat$Correlation_structure))
+ 
+print("Sequences:")
+
+ kable(table(dta2.stat$Sequences))
+ 
+print("Clusters:")
+
+ kable(table(dta2.stat$clusters))
+
+print("Cluster size:")
+
+ kable(table(dta2.stat$Mean_cluster_size))
+
+ kable(table(dta2.stat$Varying_cluster_size))
+
+print("Which scenarios have cluster size 300?")
+  kable(unique(dta2.stat[dta2.stat$Mean_cluster_size == "300", c("ICC", "Correlation_structure", "Sequences", "Clusters", "Varying_cluster_size")]))
+```
+
+### Convergence
+
+```{r convergence2}
+summary(dta2.stat$convergep)
+```
+
+### Bias
+```{r bias_numbers2}
+round(summary(dta2.stat$stdbias), 3)
+
+round(summary(dta2.stat$pbias), 3)
+
+ggplot(data = subset(dta2.stat, mdl %in% c("fg.cmp")), aes(x = stdbias)) + 
+  facet_wrap( ~ wc) +
+  geom_vline(xintercept = 0, linetype = "longdash", color = "grey80", size = 1)+
+  geom_vline(xintercept = -10, linetype = "longdash", color = "grey80", size = 1)+
+  geom_vline(xintercept = 10, linetype = "longdash", color = "grey80", size = 1) +
+  geom_histogram(bins = 20) + 
+  xlab("Intervention effect estimate standardised bias") +
+  scale_y_continuous(breaks = function(x) c(0,floor(x[2]))) +
+  theme
+
+ggsave("./output/phase2_rxbias.pdf", width = 16, height = 12, units = "cm")
+```
+
+### Standard errors
+
+```{r se_histogram2}
+
+
+ggplot(data = subset(dta2.stat, mdl == "lz.inf" ), aes(x = relsetrunc)) + 
+  geom_vline(xintercept = 0, linetype = "longdash", color = "grey80", size = 0.5) +
+  geom_vline(xintercept = -10, linetype = "longdash", color = "grey80", size = 0.5) +
+  geom_vline(xintercept = 10, linetype = "longdash", color = "grey80", size = 0.5) +
+  geom_histogram(bins = 30) + 
+  facet_grid(clusters ~  wc ) +
+  labs(y = NULL, x = "Standard error relative error (%)") +
+  scale_x_continuous(breaks = c(-20, 0, 20, 30), labels = c("-20", "0", "20", ">30")) +
+  scale_y_continuous(breaks = function(x) c(0,floor(x[2]))) +
+  theme
+
+ggsave("./output/phase2_se_hist_uncorr.pdf", width = 16, height = 12, units = "cm")
+
+
+ggplot(data = subset(dta2.stat, mdl %in% c("kc.cmp", "fg.cmp") & clusters %in% c(6,12,18,24,54)), aes(x = relsetrunc)) + 
+  geom_vline(xintercept = 0, linetype = "longdash", color = "grey80", size = 0.5) +
+  geom_vline(xintercept = -10, linetype = "longdash", color = "grey80", size = 0.5) +
+  geom_vline(xintercept = 10, linetype = "longdash", color = "grey80", size = 0.5) +
+  geom_histogram(bins = 30) + 
+  facet_grid(SA + clusters ~  wc ) +
+  labs(y = NULL, x = "Standard error relative error (%)") +
+  scale_x_continuous(breaks = c(-20, 0, 20, 30), labels = c("-20", "0", "20", ">30")) +
+  scale_y_continuous(breaks = function(x) c(0,floor(x[2]))) +
+  theme
+
+ggsave("./output/phase2_se_hist.emf", width = 16, height = 12, units = "cm")
+ggsave("./output/phase2_se_hist.eps", width = 16, height = 12, units = "cm")
+
+ggplot(data = subset(dta2.stat, mdl %in% c("kc.cmp", "fg.cmp") & clusters %in% c(6,12,18,24,54)), aes(x = relsetrunc, fill = ICC)) + 
+  geom_vline(xintercept = 0, linetype = "longdash", color = "grey80", size = 0.5) +
+  geom_vline(xintercept = -10, linetype = "longdash", color = "grey80", size = 0.5) +
+  geom_vline(xintercept = 10, linetype = "longdash", color = "grey80", size = 0.5) +
+  geom_histogram(bins = 30) + 
+  facet_grid(SA + clusters ~  wc ) +
+  labs(y = NULL, x = "Standard error relative error (%)") +
+  scale_x_continuous(breaks = c(-20, 0, 20, 30), labels = c("-20", "0", "20", ">30")) +
+  scale_y_continuous(breaks = function(x) c(0,floor(x[2]))) +
+  theme
+
+ggsave("./output/phase2_se_hist_ICC.pdf", width = 16, height = 12, units = "cm")
+
+
+ggplot(data = subset(dta2.stat, mdl %in% c("kc.cmp", "fg.cmp")  & clusters %in% c(6,12,18,24,54)), aes(x = relsetrunc, fill = Varying_cluster_size)) + 
+  geom_vline(xintercept = 0, linetype = "longdash", color = "grey80", size = 0.5) +
+  geom_vline(xintercept = -10, linetype = "longdash", color = "grey80", size = 0.5) +
+  geom_vline(xintercept = 10, linetype = "longdash", color = "grey80", size = 0.5) +
+  geom_histogram(bins = 30) + 
+  facet_grid(SA + clusters ~  wc ) +
+  labs(y = NULL, x = "Standard error relative error (%)") +
+  scale_x_continuous(breaks = c(-20, 0, 20, 30), labels = c("-20", "0", "20", ">30")) +
+  scale_y_continuous(breaks = function(x) c(0,floor(x[2]))) +
+  theme
+
+ggsave("./output/phase2_se_hist_varying_cluster_size.pdf", width = 16, height = 12, units = "cm")
+
+
+
+```
+
+
+```{r se_n2}
+setNames(aggregate(relse ~ sa , 
+                   data = subset(dta2.stat, dfname=="cmp"), 
+                   FUN = function(x) round(summary(x), 3)), rep("",2))
+
+
+aggregate(relse ~ sa , 
+          data = subset(dta2.stat, dfname=="cmp"), 
+          FUN = function(x) round(c(n = sum(!is.na(x)),
+                                    n10 = sum(abs(x) > 10) ,
+                                    p10 = 100 * sum(abs(x) > 10) / sum(!is.na(x)), 
+                                    n8 = sum(abs(x) > 8) ,
+                                    p8 = 100 * sum(abs(x) > 8) / sum(!is.na(x)), 
+                                    n6 = sum(abs(x) > 6) ,
+                                    p6 = 100 * sum(abs(x) > 6) / sum(!is.na(x))), 3))
+
+```
+
+#### Uncorrected:
+
+```{r se_uncorr2}
+
+setNames(aggregate(relse ~ Clusters , 
+                   data = subset(dta2.stat, dfname=="cmp" & sa == "lz"), 
+                   FUN = function(x) round(summary(x), 3)), rep("",2))
+
+```
+
+
+#### KC:
+
+```{r se_kc2}
+
+setNames(aggregate(relse ~ Clusters + wc , 
+                   data = subset(dta2.stat, dfname=="cmp" & sa == "kc"), 
+                   FUN = function(x) round(summary(x), 3)), rep("",2))
+
+setNames(aggregate(relse ~ Mean_cluster_size, 
+                   data = subset(dta2.stat, dfname=="cmp" & sa == "kc" & wc == "Exchangeable" & Correlation_structure == "Exchangeable"), 
+                   FUN = function(x) round(summary(x), 3)), rep("",2))
+
+```
+
+#### FG:
+
+```{r se_fg2}
+
+aggregate(relse ~ clusters , 
+          data = subset(dta2.stat,  
+                        mdl == "fg.cmp" & wc == "Independent" ),
+          FUN = function(x) round(c(mean = mean(x), 
+                                    sd = sd(x),
+                                    n = sum(!is.na(x)),
+                                    n10 = sum(abs(x) > 10) ,
+                                    p10 = 100 * sum(abs(x) > 10) / sum(!is.na(x))), 3))
+aggregate(relse ~ clusters +wc, 
+          data = subset(dta2.stat,  
+                        mdl == "fg.cmp"),
+          FUN = function(x) round(c(mean = mean(x), 
+                                    sd = sd(x),
+                                    p10 = 100 * sum(abs(x) > 10) / sum(!is.na(x))), 3))
+
+aggregate(relse ~ clusters  + icc , 
+          data = subset(dta2.stat,  
+                        mdl == "fg.cmp" & wc == "Exchangeable" ),
+          FUN = function(x) round(c(mean = mean(x), 
+                                    sd = sd(x),
+                                    n = sum(!is.na(x)),
+                                    n10 = sum(abs(x) > 10) ,
+                                    p10 = 100 * sum(abs(x) > 10) / sum(!is.na(x))), 3))
+
+aggregate(relse ~ icc + Varying_cluster_size , 
+          data = subset(dta2.stat,  
+                        mdl == "fg.cmp" & wc == "Exchangeable"& Clusters %in% c(6,12)),
+          FUN = function(x) round(c(mean = mean(x), 
+                                    sd = sd(x),
+                                    n = sum(!is.na(x)),
+                                    n10 = sum(abs(x) > 10) ,
+                                    p10 = 100 * sum(abs(x) > 10) / sum(!is.na(x))), 3))
+
+```
+
+### Degrees of freedom
+
+```{r df2_1, echo = FALSE}
+
+
+dta2.stat.wide <- reshape(direction = "wide",
+                          data = dta2.stat[dta2.stat$mdl %in% c("fg.cmp", "fg.fgd5"), 
+                                           c("scenario", "clusters", "icc", "corrscenario", "sequences", "Mean_cluster_size", "cv cluster size", "wc", "meandf", "DF")],
+                          idvar =  c("scenario", "clusters", "icc", "corrscenario", "sequences", "Mean_cluster_size", "cv cluster size", "wc"),
+                          v.names = "meandf",
+                          timevar = "DF")
+
+dta2.stat.wide$diff <- (dta2.stat.wide$meandf.FG - dta2.stat.wide$'meandf.C-P') 
+
+```
+
+```{r df2_2}
+
+aggregate(cbind(meandf.FG, `meandf.C-P`, diff) ~ clusters , 
+          data = subset(dta2.stat.wide, Mean_cluster_size != "300"), 
+          FUN = function(x) round(c(mean = mean(x), 
+                                    sd = sd(x)), 3))
+
+ggplot(data = subset(dta2.stat, dfname == "cmp"), 
+       aes(x = meandf, y = dfdiff[,1], color = `cv cluster size`, shape = sequences)) + 
+  geom_hline(yintercept = 0, linetype = "longdash", color = "grey80", size = 0.5) +
+  geom_point(size = 0.8, stroke = 1.2) +
+  scale_color_grey() +
+  scale_shape_manual( values = c(4, 1)) +
+  xlab("Clusters - parameters") +
+  ylab(expression(DF[FG] -DF[C-P])) +
+  theme
+
+ggsave("./output/phase2_df.pdf", width = 16, height = 12, units = "cm")
+```
+
+
+### Coverage
+
+```{r cov_histogram2}
+
+ggplot(data = subset(dta2.stat, sa %in% c("fg", "kc") & clusters %in% c(6,12,18,24,54)), aes(x = coverage)) + 
+  geom_histogram(bins = 25) + 
+  facet_grid(DF  + clusters ~ wc + SA) +
+  geom_vline(xintercept = 95, linetype = "longdash", color = "grey80", size = 0.5) + 
+  geom_vline(xintercept = 93.6, linetype = "longdash", color = "grey80", size = 0.5) + 
+  geom_vline(xintercept = 96.4, linetype = "longdash", color = "grey80", size = 0.5) +
+  xlab("95% confidence interval coverage") +
+  scale_y_continuous(breaks = function(x) c(0,floor(x[2]))) +
+  theme
+
+ggsave("./output/phase2_coverage_corr.emf", width = 16, height = 12, units = "cm")
+ggsave("./output/phase2_coverage_corr.eps", width = 16, height = 12, units = "cm")
+
+ggplot(data = subset(dta2.stat, sa %in% c("fg", "kc") & clusters %in% c(6,12,18,24,54)), aes(x = coverage, fill = sequences)) + 
+  geom_histogram(bins = 25) + 
+  facet_grid(DF + clusters ~ wc + SA) +
+  geom_vline(xintercept = 95, linetype = "longdash", color = "grey80", size = 0.5) + 
+  geom_vline(xintercept = 93.6, linetype = "longdash", color = "grey80", size = 0.5) + 
+  geom_vline(xintercept = 96.4, linetype = "longdash", color = "grey80", size = 0.5) +
+  xlab("95% confidence interval coverage") +
+  scale_y_continuous(breaks = function(x) c(0,floor(x[2]))) +
+  theme
+
+ggsave("./output/phase2_coverage_corr_seq.pdf", width = 16, height = 12, units = "cm")
+
+ggplot(data = subset(dta2.stat, sa %in% c("fg", "kc") & clusters %in% c(6,12,24,48)), aes(x = coverage, fill = icc)) + 
+  geom_histogram(bins = 25) + 
+  facet_grid(DF + clusters ~ wc + SA) +
+  geom_vline(xintercept = 95, linetype = "longdash", color = "grey80", size = 0.5) + 
+  geom_vline(xintercept = 93.6, linetype = "longdash", color = "grey80", size = 0.5) + 
+  geom_vline(xintercept = 96.4, linetype = "longdash", color = "grey80", size = 0.5) +
+  xlab("95% confidence interval coverage") +
+  scale_y_continuous(breaks = function(x) c(0,floor(x[2]))) +
+  theme
+
+ggsave("./output/phase2_coverage_corr_icc.pdf", width = 16, height = 12, units = "cm")
+
+ggplot(data = subset(dta2.stat, (sa %in% c("lz") | mdl == "lz.inf") & clusters > 18), aes(x = coverage)) + 
+  geom_histogram(bins = 15) + 
+  facet_grid(clusters ~  wc+ DF) +
+  geom_vline(xintercept = 95, linetype = "longdash", color = "grey80", size = 0.5) + 
+  geom_vline(xintercept = 93.6, linetype = "longdash", color = "grey80", size = 0.5) + 
+  geom_vline(xintercept = 96.4, linetype = "longdash", color = "grey80", size = 0.5) +
+  xlab("95% confidence interval coverage") +
+  scale_y_continuous(breaks = function(x) c(0,floor(x[2]))) +
+  theme
+
+ggsave("./output/phase2_coverage_uncorr.pdf", width = 16, height = 12, units = "cm")
+
+```
+
+#### Uncorrected
+
+```{r cov_n2}
+aggregate(coverage ~ clusters + dfname, 
+          data = subset(dta2.stat, sa == "lz"), 
+          FUN = function(x) round(c(n = sum(!is.na(x)), 
+                                    overc = sum(x > 96.4),
+                                    p_overc = 100 * sum(x > 96.4) / sum(!is.na(x)), 
+                                    underc = sum(x < 93.6), 
+                                    p_underc = 100 * sum(x < 93.6) / sum(!is.na(x))),2))
+```
+
+#### KC
+
+```{r cov_n2_kc}
+aggregate(coverage ~ clusters + wc + dfname, 
+          data = subset(dta2.stat, sa == "fg"), 
+          FUN = function(x) mean = round(c(mean(x),
+                                            p_over = 100 * sum(x > 96.4) / sum(!is.na(x)), 
+                                           p_und = 100 * sum(x < 93.6) / sum(!is.na(x))),2))
+aggregate(coverage ~ wc + dfname, 
+          data = subset(dta2.stat, sa == "kc"), 
+          FUN = function(x) round(c(n = sum(!is.na(x)), 
+                                    overc = sum(x > 96.4),
+                                    p_overc = 100 * sum(x > 96.4) / sum(!is.na(x)), 
+                                    underc = sum(x < 93.6), 
+                                    p_underc = 100 * sum(x < 93.6) / sum(!is.na(x))),2))
+```
+
+
+#### FG
+
+```{r cov_n2_fg}
+
+
+
+aggregate(coverage ~ wc + dfname, 
+          data = subset(dta2.stat, sa == "fg"), 
+          FUN = function(x) round(c(mean = mean(x), 
+                                    n = sum(!is.na(x)), 
+                                    over = sum(x > 96.4),
+                                    p_over = 100 * sum(x > 96.4) / sum(!is.na(x)), 
+                                    und = sum(x < 93.6), 
+                                    p_und = 100 * sum(x < 93.6) / sum(!is.na(x))),2))
+
+aggregate(coverage ~ clusters + wc + dfname, 
+          data = subset(dta2.stat, sa == "fg"), 
+          FUN = function(x) mean = round(c(mean(x),
+                                            p_over = 100 * sum(x > 96.4) / sum(!is.na(x)), 
+                                           p_und = 100 * sum(x < 93.6) / sum(!is.na(x))),2))
+
+aggregate(coverage ~ clusters + wc + icc, 
+          data = subset(dta2.stat, sa == "fg"), 
+          FUN = function(x) mean = round(mean(x),2))
+
+```
+
+#### Degrees of freedom
+
+```{r cov_n2_df}
+
+aggregate(coverage ~ dfname, 
+          data = dta2.stat, 
+          FUN = function(x) round(c(n = sum(!is.na(x)), 
+                                    overc = sum(x > 96.4),
+                                    p_overc = 100 * sum(x > 96.4) / sum(!is.na(x)), 
+                                    underc = sum(x < 93.6), 
+                                    p_underc = 100 * sum(x < 93.6) / sum(!is.na(x))),2))
+
+
+```
+
+### Power
+
+#### Power: sa diff with indep wc
+
+```{r powersa}
+
+dta2.stat.wide <- reshape(direction = "wide",
+                          data = dta2.stat[dta2.stat$mdl %in% c("kc.fgd5", "fg.fgd5", "kc.cmp", "fg.cmp") & dta2.stat$clusters > 6, 
+                                           c("scenario", "clusters", "icc", "corrscenario", "sequences", "Mean_cluster_size", "cv cluster size", "wc", "power", "DF", "sa")],
+                          idvar =  c("scenario", "clusters", "icc", "corrscenario", "sequences", "Mean_cluster_size", "cv cluster size", "DF", "wc"),
+                          v.names = "power",
+                          timevar = "sa")
+
+dta2.stat.wide$av <- (dta2.stat.wide$power.fg + dta2.stat.wide$power.kc) / 2
+dta2.stat.wide$diff <- dta2.stat.wide$power.fg - dta2.stat.wide$power.kc
+dta2.stat.wide$reldiff <- (dta2.stat.wide$power.fg + 1) / (dta2.stat.wide$power.kc + 1)
+dta2.stat.wide$logreldiff <- log(dta2.stat.wide$reldiff)
+
+ggplot(data = subset(dta2.stat.wide, wc == "Independent"), aes(x = diff)) + 
+  geom_histogram() +
+  xlab("Difference in power (FG - KC)") +
+  theme
+
+ggsave("./output/phase2_power_sa.pdf", width = 16, height = 12, units = "cm")
+
+sumdiff <- aggregate(diff ~ DF, data = subset(dta2.stat.wide, wc == "Independent"), FUN = function(x) c(mean(x), sd(x)))
+sumdiff$mean <- sumdiff$diff[,1]
+sumdiff$sd <- sumdiff$diff[,2]
+sumdiff$upper <- sumdiff$mean + 1.96 * sumdiff$sd
+sumdiff$lower <- sumdiff$mean - 1.96 * sumdiff$sd
+
+ggplot(data = subset(dta2.stat.wide, wc == "Independent"), aes(x = av, y = diff)) + 
+  facet_grid(DF ~.) +
+  geom_hline(yintercept = 0) +
+  geom_hline(data = sumdiff, aes(yintercept = mean), linetype = "longdash", color = "grey80") +
+  geom_hline(data = sumdiff, aes(yintercept = upper), linetype = "longdash", color = "grey80") +
+  geom_hline(data = sumdiff, aes(yintercept = lower), linetype = "longdash", color = "grey80") +
+  geom_point() +
+  theme
+
+
+aggregate(diff ~ wc, 
+          data = dta2.stat.wide,
+          FUN = function(x) round(c(n =  sum(!is.na(x)),
+                                    mean = (mean(x)), 
+                                    median = (median(x)), 
+                                    p25 = (quantile(x,0.25)),
+                                    p25 = (quantile(x,0.75))), 2))
+
+dta2.stat.wide$clusters <- factor(dta2.stat.wide$clusters)
+dta2.stat.wide$cv <- dta2.stat.wide$`cv cluster size`
+
+mdl <- lm(diff ~ clusters + sequences + corrscenario + icc + Mean_cluster_size + cv,
+   data = subset(dta2.stat.wide, wc == "Independent"))
+
+coef(summary(mdl))
+anova(mdl)
+ggeffect(mdl, given.values = "equal")
+
+
+```
+
+
+#### Power: df diff with indep wc 
+
+```{r powerdf}
+
+dta2.stat.wide <- reshape(direction = "wide",
+                          data = dta2.stat[dta2.stat$mdl %in% c("kc.fgd5", "fg.fgd5", "kc.cmp", "fg.cmp") & dta2.stat$wc == "Independent", 
+                                           c("scenario", "clusters", "icc", "corrscenario", "sequences", "Mean_cluster_size", "cv cluster size", "wc", "power", "DF", "SA")],
+                          idvar =  c("scenario", "clusters", "icc", "corrscenario", "sequences", "Mean_cluster_size", "cv cluster size", "wc", "SA"),
+                          v.names = "power",
+                          timevar = "DF")
+
+dta2.stat.wide$diff <- dta2.stat.wide$power.FG - dta2.stat.wide$`power.C-P`
+
+dta2.stat.wide$av <- (dta2.stat.wide$power.FG + dta2.stat.wide$`power.C-P`) / 2
+dta2.stat.wide$reldiff <- (dta2.stat.wide$power.FG + 1) / (dta2.stat.wide$`power.C-P` + 1)
+dta2.stat.wide$logreldiff <- log(dta2.stat.wide$reldiff)
+
+ggplot(data = dta2.stat.wide, aes(x = diff)) + 
+  facet_grid(clusters~.) +
+  geom_histogram() +
+  xlab(expression(paste("Difference in power (", DF[FG] - DF[C-P] ,")"))) +
+  theme
+
+ggsave("./output/phase2_power_DF.pdf", width = 16, height = 12, units = "cm")
+
+sumdiff <- aggregate(diff ~ SA, data = dta2.stat.wide, FUN = function(x) c(mean(x), sd(x)))
+sumdiff$mean <- sumdiff$diff[,1]
+sumdiff$sd <- sumdiff$diff[,2]
+sumdiff$upper <- sumdiff$mean + 1.96 * sumdiff$sd
+sumdiff$lower <- sumdiff$mean - 1.96 * sumdiff$sd
+
+ggplot(data = dta2.stat.wide, aes(x = av, y = diff )) + 
+  facet_grid(SA ~.) +
+  geom_hline(yintercept = 1) +
+  geom_hline(data = sumdiff, aes(yintercept = mean), linetype = "longdash", color = "grey80") +
+  geom_hline(data = sumdiff, aes(yintercept = upper), linetype = "longdash", color = "grey80") +
+  geom_hline(data = sumdiff, aes(yintercept = lower), linetype = "longdash", color = "grey80") +
+  geom_point() +
+  theme
+
+
+aggregate(diff ~ clusters, 
+          data = dta2.stat.wide,
+          FUN = function(x) round(c(n =  sum(!is.na(x)),
+                                    mean = (mean(x)), 
+                                    median = (median(x)), 
+                                    p25 = (quantile(x,0.25)),
+                                    p25 = (quantile(x,0.75))),2))
+
+dta2.stat.wide$clusters <- factor(dta2.stat.wide$clusters)
+dta2.stat.wide$cv <- dta2.stat.wide$`cv cluster size`
+
+
+mdl <- lm(diff ~ clusters + sequences + corrscenario + icc + Mean_cluster_size + cv,
+   data = dta2.stat.wide)
+
+coef(summary(mdl))
+anova(mdl)
+ggeffect(mdl, given.values = "equal")
+# meff <- ggeffect(mdl, given.values = "equal")
+# meff <- do.call(rbind, meff)
+# cbind(meff[,c(1,6)], round(exp(meff[,c(2,4,5)]),3))
+
+
+```
+
+#### Power: wc diff with kc sa and FG DF
+
+``` {r powerwc}
+
+
+# Reshape by wc
+
+dta2.stat.wide <- reshape(direction = "wide",
+                          data = dta2.stat[dta2.stat$mdl %in% c("kc.fgd5", "fg.fgd5"), 
+                                           c("scenario", "clusters", "icc", "corrscenario", "sequences", "Mean_cluster_size", "cv cluster size", "wc", "power", "DF", "SA")],
+                          idvar =  c("scenario", "clusters", "icc", "corrscenario", "sequences", "Mean_cluster_size", "cv cluster size", "DF", "SA"),
+                          v.names = "power",
+                          timevar = "wc")
+
+# Calculate differences
+
+dta2.stat.wide$av <- ((dta2.stat.wide$power.Exchangeable ) + ( dta2.stat.wide$power.Independent )) /2 
+dta2.stat.wide$diff <- ((dta2.stat.wide$power.Exchangeable ) - ( dta2.stat.wide$power.Independent )) 
+dta2.stat.wide$reldiff <- ((dta2.stat.wide$power.Exchangeable + 1) / ( dta2.stat.wide$power.Independent + 1)) 
+dta2.stat.wide$logreldiff <- log(dta2.stat.wide$reldiff)
+
+# Plot EWM - IWM against average
+
+sumdiff <- aggregate(diff ~ SA, data = dta2.stat.wide, FUN = function(x) c(mean(x), sd(x)))
+sumdiff$mean <- sumdiff$diff[,1]
+sumdiff$sd <- sumdiff$diff[,2]
+sumdiff$upper <- sumdiff$mean + 1.96 * sumdiff$sd
+sumdiff$lower <- sumdiff$mean - 1.96 * sumdiff$sd
+
+ggplot(data = dta2.stat.wide, aes(x = av, y = diff, color = Mean_cluster_size)) + 
+  facet_grid(SA ~.) +
+  geom_hline(yintercept = 0) +
+  geom_hline(data = sumdiff, aes(yintercept = mean), linetype = "longdash", color = "grey80") +
+  geom_hline(data = sumdiff, aes(yintercept = upper), linetype = "longdash", color = "grey80") +
+  geom_hline(data = sumdiff, aes(yintercept = lower), linetype = "longdash", color = "grey80") +
+  geom_point() +
+  theme
+
+# Plot EWM / IWM against average
+
+sumreldiff <- aggregate(logreldiff ~ SA, data = dta2.stat.wide, FUN = function(x) c(mean(x), sd(x)))
+sumreldiff$mean <- sumreldiff$logreldiff[,1]
+sumreldiff$sd <- sumreldiff$logreldiff[,2]
+sumreldiff$emean <- exp(sumreldiff$mean)
+sumreldiff$upper <- exp(sumreldiff$mean + 1.96 * sumreldiff$sd)
+sumreldiff$lower <- exp(sumreldiff$mean - 1.96 * sumreldiff$sd)
+
+ggplot(data = dta2.stat.wide, aes(x = av, y = reldiff, color = Mean_cluster_size)) + 
+  facet_grid(SA ~.) +
+  geom_hline(yintercept = 1) +
+  geom_hline(data = sumreldiff, aes(yintercept = emean), linetype = "longdash", color = "grey80") +
+  geom_hline(data = sumreldiff, aes(yintercept = upper), linetype = "longdash", color = "grey80") +
+  geom_hline(data = sumreldiff, aes(yintercept = lower), linetype = "longdash", color = "grey80") +
+  geom_point() +
+  scale_y_continuous(trans='log2') +
+  theme
+
+ggplot(data = dta2.stat.wide, aes(x = diff)) + 
+  facet_grid(SA ~ .) +
+  geom_vline(xintercept = 1) +
+  geom_histogram(bins=40) +
+  xlab("Difference in power (Exchangeable - Independent)") +
+  theme
+
+ggsave("./output/phase2_power_wc.pdf", width = 16, height = 12, units = "cm")
+
+
+aggregate(diff ~ SA, 
+          data = subset(dta2.stat.wide, DF == "FG"),
+          FUN = function(x) round(c(n =  sum(!is.na(x)),
+                                    mean = (mean(x)), 
+                                    median = (median(x)), 
+                                    p25 = (quantile(x,0.25)),
+                                    p25 = (quantile(x,0.75))),2))
+
+dta2.stat.wide$clusters <- factor(dta2.stat.wide$clusters)
+dta2.stat.wide$cv <- dta2.stat.wide$`cv cluster size`
+
+mdl <- lm(diff ~ clusters + sequences + corrscenario + icc + Mean_cluster_size + cv,
+   data = subset(dta2.stat.wide, SA == "KC"), na.action = na.exclude )
+
+coef(summary(mdl))
+anova(mdl)
+
+ggeffect(mdl, given.values = "equal")
+
+# meff <- do.call(rbind, ggeffect(mdl, given.values = "equal"))
+# cbind(meff[,c(1,6)], round(exp(meff[,c(2,4,5)]),3))
+
+mdl <- lm(diff ~ clusters+ sequences + corrscenario + icc + Mean_cluster_size + cv,
+   data = subset(dta2.stat.wide, SA == "FG"))
+
+#coef(summary(mdl))
+anova(mdl)
+
+ggeffect(mdl, given.values = "equal")
+
+
+# meff <- do.call(rbind, ggeffect(mdl, given.values = "equal"))
+# cbind(meff[,c(1,6)], round(exp(meff[,c(2,4,5)]),3))
+
+# Can also look at marginal effect fixing cluster size:
+#meff <- ggeffect(mdl, given.values = c(clusters12 = 1/7, clusters18 = 1/7, clusters24 = 1/7, clusters42 = 1/7, clusters48 = 1/7, clusters54 = 1/7, sequences6 = 1/2, "corrscenarioAR r=0.6" = 1/4, "corrscenarioAR r=0.8"  = 1/4, "corrscenarioReduced intervention" =1/4, icc0.05 = 1/3, icc0.1 = 1/3, Mean_cluster_size60 = 0, Mean_cluster_size300 = 1, cv0.4 =1/2))
+
+
+temp <- dta2.stat[dta2.stat$wc == "Exchangeable" & dta2.stat$mdl == "fg.fgd5",]
+
+temp <- merge(temp, dta2.stat.wide, by = c("scenario", "clusters", "icc", "corrscenario", "sequences", "Mean_cluster_size", "cv cluster size", "DF", "SA"))
+
+ggplot(data = subset(temp, Mean_cluster_size == "300"), aes(x = coverage, y = diff, color=factor(clusters))) + 
+  facet_grid(icc ~ corrscenario) + 
+  geom_vline(xintercept = 95) + 
+  geom_point()
+
+```
+
+
+#### Difference in SEs by correlation structure
+
+``` {r sewc}
+
+# Reshape by WC
+dta2.stat.wide <- reshape(direction = "wide",
+                          data = dta2.stat[dta2.stat$mdl %in% c("kc.fgd5", "fg.fgd5")& dta2.stat$clusters > 12, 
+                                           c("scenario", "clusters", "icc", "corrscenario", "sequences", "Mean_cluster_size", "cv cluster size", "wc", "mbse", "DF", "SA")],
+                          idvar =  c("scenario", "clusters", "icc", "corrscenario", "sequences", "Mean_cluster_size", "cv cluster size", "DF", "SA"),
+                          v.names = "mbse",
+                          timevar = "wc")
+
+dta2.stat.wide$relseive <- dta2.stat.wide$mbse.Exchangeable / dta2.stat.wide$mbse.Independent
+
+ggplot(data = dta2.stat.wide, aes(x = relseive)) + 
+  facet_grid(SA ~ .) +
+  geom_vline(xintercept = 1) +
+  geom_histogram(bins=40) +
+  xlab("Ratio of standard errors (Exchangeable / Independent)") +
+  theme
+```
+
